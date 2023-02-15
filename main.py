@@ -77,7 +77,7 @@ nodes, arcs, costs, paths, b = g.export_network()
 # print(b)
 
 #initialize network model
-model = Math_model(nodes, b, arcs, costs, 12)
+model = Math_model(nodes, b, arcs, costs, 10)
 model._print_init()
 
 end = time.time() #end timer
