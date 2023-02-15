@@ -1,16 +1,9 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[3]:
-
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import rcParams
 from scipy.spatial import Delaunay
 
 
-get_ipython().run_line_magic('matplotlib', 'inline')
 rcParams['figure.figsize'] = 10, 8
 
 
