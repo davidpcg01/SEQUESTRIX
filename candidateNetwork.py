@@ -30,6 +30,8 @@ class candidateNetwork(DiGraph):
         self.initial_pipe_spaths = {}
         self.assetCap = {}
         self.existingPathBounds = {}
+        self.spathsLength = {}
+        self.spathsWeight = {}
         
         
     
@@ -299,9 +301,12 @@ class candidateNetwork(DiGraph):
             if self.edges[edge]['weight'] == val:
                 print(edge, self.edges[edge])
                 
+    def weight_func(self, distance, time):
+        return distance * time
+    
     def get_shortest_path_and_length(self, source, destination):
-        slength = nx.shortest_path_length(self, source, destination, weight='weight')
-        spath = nx.shortest_path(self, source, destination, weight='weight')
+        slength = nx.shortest_path_length(self, source, destination, weight=lambda u, v, d: self.weight_func(d['weight'], d['length']))
+        spath = nx.shortest_path(self, source, destination, weight=lambda u, v, d: self.weight_func(d['weight'], d['length']))
         return slength, spath
     
     def get_all_source_sink_shortest_paths(self):
@@ -321,7 +326,11 @@ class candidateNetwork(DiGraph):
         return self.spathsCost
     
     def print_candidate_shortest_paths(self):
-        print("The costs are: ", self.spathsCost)
+        print("The lengths are: ", self.spathsLength)
+        print("")
+        print("The weights are: ", self.spathsWeight)
+        print("")
+        print("The weighted costs are: ", self.spathsCost)
         print("")
         print("The shortest paths are: ", self.spaths)
         print("")
@@ -668,6 +677,19 @@ class candidateNetwork(DiGraph):
                 
         self.spaths = spaths.copy()
         self.spathsCost = spathsCost.copy()
+
+        for key in spaths.keys():
+            t_length = 0
+            t_weight = 0
+            for i in range(len(spaths[key]) - 1):
+                nodelist = spaths[key]
+                t_weight += self.edges[(nodelist[i], nodelist[i+1])]['weight']
+                t_length += self.edges[(nodelist[i], nodelist[i+1])]['length']
+            self.spathsWeight[key] = t_weight
+            self.spathsLength[key] = t_length
+
+
+
         
     def export_network(self):
         nodesdict = {}
@@ -691,6 +713,8 @@ class candidateNetwork(DiGraph):
                 
         # print("nodesdict: ", nodesdict)
         arcsCost = {}
+        arcsLength = {}
+        arcsWeight = {}
         arcsPath = {}
         arcs = []
         
@@ -700,6 +724,10 @@ class candidateNetwork(DiGraph):
             node2 = nodesdict[key[1]]
             arcsCost[(node1, node2)] = value
             arcsCost[(node2, node1)] = value
+            arcsLength[(node1, node2)] = self.spathsLength[key]
+            arcsLength[(node2, node1)] = self.spathsLength[key]
+            arcsWeight[(node1, node2)] = self.spathsWeight[key]
+            arcsWeight[(node2, node1)] = self.spathsWeight[key]
             arcsPath[(node1, node2)] = self.spaths[key]
             arcsPath[(node2, node1)] = [i for i in reversed(self.spaths[key])]
             arcs.append((node1, node2))
@@ -712,8 +740,8 @@ class candidateNetwork(DiGraph):
             if node in self.assetCap.keys():
                 nodes_b[node] = self.assetCap[node]
 
-        #define all arc info
-        arcsInfo = {key:[arcsCost[key], 0, 1e9] for key in arcsCost.keys()}
+        #define all arc info [length, weight, w_cost, lower_bound, upper_bound]
+        arcsInfo = {key:[arcsLength[key],arcsWeight[key],arcsCost[key], 0, 1e9] for key in arcsCost.keys()}
 
         for arc in arcs:
             arc_1 = arc[0].split("_")[0]
@@ -722,6 +750,8 @@ class candidateNetwork(DiGraph):
                 if arc_1 in self.existingPathBounds.keys():
                     arcsInfo[arc][1] = self.existingPathBounds[arc_1][0]
                     arcsInfo[arc][2] = self.existingPathBounds[arc_1][1]
+        
+        
 
 
 
@@ -789,7 +819,7 @@ if __name__ == '__main__':
     g.shortest_paths_post_process()
     g.show_candidate_network()
     g.plot_extracted_graph()
-    # g.print_candidate_shortest_paths()
+    g.print_candidate_shortest_paths()
     
     
 #     g.get_pipe_trans_nodes()

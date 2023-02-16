@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[16]:
-
-
 import random
 import numpy as np
 import csv
@@ -16,7 +10,8 @@ class dummyCostSurface:
         self.highcost = highcost
         self.vertices = []
         self.edges = []
-        self.edgesDict = {}
+        self.edgesWDict = {}
+        self.edgesLDict = {}
         self.neighbors = {}
         self.ebunch = []
         
@@ -96,19 +91,30 @@ class dummyCostSurface:
                 cost = random.randint(self.lowcost, self.highcost)
             else:
                 cost = round(random.uniform(self.lowcost, self.highcost),2)
-            if ((edge[0], edge[1]) not in self.edgesDict) and ((edge[1], edge[0]) not in self.edgesDict):
-                self.edgesDict[(edge[0], edge[1])] = cost
-                self.edgesDict[(edge[1], edge[0])] = cost
+            if ((edge[0], edge[1]) not in self.edgesWDict) and ((edge[1], edge[0]) not in self.edgesWDict):
+                self.edgesWDict[(edge[0], edge[1])] = cost
+                self.edgesWDict[(edge[1], edge[0])] = cost
     
-        keys = list(self.edgesDict.keys())
+        keys = list(self.edgesWDict.keys())
         keys.sort()
-        self.edgesDict = {i: self.edgesDict[i] for i in keys}
+        self.edgesWDict = {i: self.edgesWDict[i] for i in keys}
         
+    def assign_length(self):
+        for edge in self.edges:
+            length = 1 #TODO: make the length fixed for adjacent moves and sqrt(2)*l for diagonal moves
+            if ((edge[0], edge[1]) not in self.edgesLDict) and ((edge[1], edge[0]) not in self.edgesLDict):
+                self.edgesLDict[(edge[0], edge[1])] = length
+                self.edgesLDict[(edge[1], edge[0])] = length
+
+        keys = list(self.edgesLDict.keys())
+        keys.sort()
+        self.edgesLDict = {i: self.edgesLDict[i] for i in keys}
+
         
     def generate_ebunch(self):
         result = []
-        for key in self.edgesDict.keys():
-            result.append((key[0], key[1], {'weight': self.edgesDict[key]}))
+        for key in self.edgesWDict.keys():
+            result.append((key[0], key[1], {'weight': self.edgesWDict[key], 'length': self.edgesLDict[key]}))
             
         self.ebunch = result.copy()
         
@@ -117,10 +123,11 @@ class dummyCostSurface:
         self.initialize_edges()
         self.initialize_neighbors()
         self.assign_random_cost()
+        self.assign_length()
         self.generate_ebunch()
     
-    def get_edgesDict(self):
-        return self.edgesDict
+    def get_edgesWDict(self):
+        return self.edgesWDict
     
     def get_vertices(self):
         return self.vertices
@@ -136,7 +143,7 @@ class dummyCostSurface:
                 writer.writerow([_] + self.neighbors[_])
                 cost = [0]
                 for n in self.neighbors[_]:
-                    cost.append(self.edgesDict[(_,n)])
+                    cost.append(self.edgesWDict[(_,n)])
                 writer.writerow(cost)
     
     
@@ -147,7 +154,7 @@ if __name__ == '__main__':
     
     print(C.get_vertices())
     print("")
-    #print(C.get_edgesDict())
+    #print(C.get_edgesWDict())
     print(C.get_ebunch())
     
     #C.writeGraphToCsv("newTest")
