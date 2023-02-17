@@ -1,5 +1,6 @@
 from math_model import Math_model
 from candidateNetwork import candidateNetwork
+from input_data import InputData
 import time
 
 start = time.time() #start timer
@@ -13,20 +14,16 @@ g.initialize_dummy_cost_surface()
 #Import existing pipeline
 g.import_pipeline(input_dir='Existing Pipeline.xlsx', pathname='pipeline1')
 
-#confirm pipeline has been imported
-#     print(g.get_existing_zero_cost_path())
-#     print(g.get_existing_zero_cost_path_vertices())
+#Import source and sink info
+data = InputData('TestInput.xlsx')
+data._read_data()
+sources, sinks, nodesCost = data.process_data()
 
+# print(nodesCost)
 
-#g.print_edges()
-
-
-#Enter source and sink locations:
+#Note
 #source: (sourceName, X, Y, AnnualCO2Cap in MTCO2/yr)
 #sink: (sinkName, X, Y, TotalCO2Cap in MTCO2)
-sources = [('source_1', 10, 18, 1), ('source_2', 20, 75, 20), ('source_3', 50, 50, 1)]
-sinks = [('sink_1', 80, 35, 50), ('sink_2', 80, 90, 40)]
-
 g.add_sources(sources)
 g.add_sinks(sinks)
 
@@ -55,28 +52,15 @@ g.trans_node_post_process()
 g.get_pipe_trans_nodes()
 g.pipe_post_process()
 g.shortest_paths_post_process()
-# g.show_candidate_network()
+g.show_candidate_network()
 # g.plot_extracted_graph()
 # g.print_candidate_shortest_paths()
 
-
-#     g.get_pipe_trans_nodes()
-
-# g._print_assetNameFromPT()
-
+#Get Data for network optimization
 nodes, arcs, costs, paths, b = g.export_network()
 
-# print(nodes)
-# print(" ")
-# # print(arcs)
-# print(" ")
-# print(costs)
-# print(" ")
-# # print(paths)
-# print(" ")
-# print(b)
 
-nodesCost = {'source_1': 2, 'source_2': 1.5, 'source_3': 1.8, 'sink_1': -31, 'sink_2': -31}
+# nodesCost = {'source_1': 2, 'source_2': 1.5, 'source_3': 1.8, 'sink_1': -31, 'sink_2': -31}
 duration = 10 #yrs
 target_cap = 10 #MTCO2
 
@@ -84,8 +68,13 @@ target_cap = 10 #MTCO2
 model = Math_model(nodes, b, arcs, costs, paths, nodesCost, duration, target_cap)
 model.build_model()
 model.solve_model()
+soln_arcs = model.get_soln_arcs()
 # model._print_sets()
 # model._print_parameters()
+
+# print(soln_arcs)
+
+g.show_solution_network(soln_arcs)
 
 end = time.time() #end timer
 

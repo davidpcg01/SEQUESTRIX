@@ -51,10 +51,14 @@ class Math_model:
     def _initialize_source_parameters(self) -> None:
         self.source_annual_cap: Dict = {} #amount of CO2 that can be captured at source annually (MtCO2/yr)
         self.capture_cost: Dict = {} #capture cost of CO2 at source in $/tCO2
+        self.capture_fixed_cost: Dict = {} #fixed capture cost of CO2 at source in $M
+        self.capture_var_cost: Dict = {} #variable capture cost of CO2 at source in $/tCO2
 
     def _initialize_sink_parameters(self) -> None:
         self.sink_cap: Dict = {} #total amount of CO2 that can be stored at a sink in MTCO2
         self.storage_cost: Dict = {} #storage cost of CO2 at source in $/tCO2
+        self.storage_fixed_cost: Dict = {} #fixed capture cost of CO2 at source in $M
+        self.storage_var_cost: Dict = {} #variable capture cost of CO2 at source in $/tCO2
 
     def _initialize_arcs_parameters(self) -> None:
         self.max_arc_cap: Dict = {} #maximum amout of CO2 an arc/or pipeline can transport annually (MtCO2/yr)
@@ -91,11 +95,23 @@ class Math_model:
     def _generate_parameters(self) -> None:
         #source parameters
         self.source_annual_cap = {key:self.nodesValue[key] for key in self.src}
-        self.capture_cost = {key:self.nodesCost[key] for key in self.src}
+        self.capture_cost = {key:self.nodesCost[key][0] for key in self.src}
+        self.capture_fixed_cost = {key:self.nodesCost[key][1] for key in self.src}
+        self.capture_var_cost = {key:self.nodesCost[key][2] for key in self.src}
+
+        self.capture_v_cost = {key:self.capture_cost[key] if (self.capture_var_cost[key] == 0)
+                                and (self.capture_fixed_cost[key] == 0)
+                                else self.capture_var_cost[key] for key in self.src}
 
         #sink parameters
         self.sink_cap = {key:self.nodesValue[key] for key in self.sink}
-        self.storage_cost = {key:self.nodesCost[key] for key in self.sink}
+        self.storage_cost = {key:self.nodesCost[key][0] for key in self.sink}
+        self.storage_fixed_cost = {key:self.nodesCost[key][1] for key in self.sink}
+        self.storage_var_cost = {key:self.nodesCost[key][2] for key in self.sink}
+
+        self.storage_v_cost = {key:self.storage_cost[key] if (self.storage_var_cost[key] == 0) 
+                                and (self.storage_fixed_cost[key] == 0)
+                                else self.storage_var_cost[key] for key in self.sink}
 
         #arc parameters
         self.max_arc_cap = {key:self.arcsInfo[key][4] for key in self.a_a}
@@ -159,6 +175,10 @@ class Math_model:
         #indicator is sink is opened
         index = (sink for sink in self.sink)
         self.vars['sink_opened'] = self.model.addVars(index, name='sink_opened', vtype=GRB.BINARY)
+
+        #arc build cost
+        index = ((node1, node2) for (node1, node2) in self.a_a)
+        self.vars['arc_build_cost'] = self.model.addVars(index, name='arc_build_cost', lb=0, vtype=GRB.CONTINUOUS)
 
 
 
@@ -259,6 +279,14 @@ class Math_model:
                     >= self.target_cap)
         self.cons[cons_name] = self.model.addConstr(constr, name=cons_name)
 
+    def _calculate_build_cost_cons(self) -> None:
+        cons_name = 'calc_arc_build_cost'
+        constr = ((0.11571952 * self.vars['arc_flow'][node1, node2] * 1e-6) + 0.431655132 \
+                    == self.vars['arc_build_cost'][node1, node2]
+                    for (node1, node2) in self.a_a)
+        self.cons[cons_name] = self.model.addConstrs(constr, name=cons_name)
+
+
 
     def create_constraints(self) -> None:
         self._arc_upper_lower_bound_cons()
@@ -301,6 +329,11 @@ class Math_model:
                % (time.time() - START_TIME))
         print(msg)
         LOGGER.info(msg)
+        self._calculate_build_cost_cons()
+        msg = ("'Build Cost calculation' constraint: Time elapsed: %.2f seconds"
+               % (time.time() - START_TIME))
+        print(msg)
+        LOGGER.info(msg)
 
 
 
@@ -332,10 +365,20 @@ class Math_model:
 
     def create_objective(self) -> None:
         #capture cost + transport flow cost + arc build cost + storage cost
-        obj  = sum((1 * self.vars['src_opened'][s]) + (self.capture_cost[s] * self.vars['CO2_captured'][s]) for s in self.src) \
-                + sum(2 * self.vars['arc_flow'][node1, node2] for (node1, node2) in self.a_a) \
-                    + sum(self.arc_cost[node1, node2] * self.vars['arc_built'][node1, node2] for (node1, node2) in self.a_a) \
-                        + sum((1 * self.vars['sink_opened'][d]) + (self.storage_cost[d] * self.vars['CO2_injected'][d]) for d in self.sink)
+        capture_cost = sum((self.capture_fixed_cost[s] * self.vars['src_opened'][s]) + # $M * {0,1} = $M
+                            (self.capture_v_cost[s] * self.vars['CO2_captured'][s] * self.duration) for s in self.src) # $/tCO2 * MTCO2/yr * yr = $M
+        
+        storage_cost = sum((self.storage_fixed_cost[d] * self.vars['sink_opened'][d]) + # $M * {0,1} = $M
+                            (self.storage_v_cost[d] * self.vars['CO2_injected'][d]) for d in self.sink) # $/tCO2 * MTCO2 = $M
+        
+        transport_flow_cost = sum(2 * self.vars['arc_flow'][node1, node2] * self.duration * 1e-6 for (node1, node2) in self.a_a) # $/tCO2 * tCO2/yr * yr  * 1e-6 = $M
+
+        pipeline_build_cost = sum(self.vars['arc_build_cost'][node1, node2] * 0.97 * self.vars['arc_built'][node1, node2] * 
+                                    self.arc_cost[node1, node2] * 0.1 #CRF of 0.1 assumed
+                                        for (node1, node2) in self.a_a) # $M * {0, 1} = $M
+
+        obj =  capture_cost + storage_cost + transport_flow_cost + pipeline_build_cost
+
 
         self.model.setObjective(obj, GRB.MINIMIZE)
         self.model.update()
@@ -368,9 +411,21 @@ class Math_model:
 
             #write solution
             self.model.write('CO2_network_optimization.sol')
+            self.extract_soln_arcs()
         LOGGER.info("Time elapsed: %.2f seconds" % (time.time() - START_TIME))
 
     
+    def extract_soln_arcs(self) -> None:
+        self.soln_arcs = {}
+        for arc in self.vars['arc_flow']:
+            if self.vars['arc_flow'][arc].X > 0.001:
+                self.soln_arcs[arc] = self.vars['arc_flow'][arc].X
+
+
+    def get_soln_arcs(self):
+        return self.soln_arcs
+
+
     def _print_sets(self) -> None:
         print("Printing Sets...".upper())
         print(self.asset)

@@ -36,7 +36,7 @@ class candidateNetwork(DiGraph):
         
     
     def initialize_dummy_cost_surface(self):
-        C = dummyCostSurface(self.n, lowcost=1, highcost=2, ctype='int')
+        C = dummyCostSurface(self.n, lowcost=1, highcost=60, ctype='int')
         C.generate_cost_surface()
         
         self.add_nodes_from(C.get_vertices())
@@ -340,7 +340,7 @@ class candidateNetwork(DiGraph):
         print(len(self.assetsPT), len(self.assetsXY))
     
     def show_candidate_network(self):
-        rcParams['figure.figsize'] = 10, 8
+        rcParams['figure.figsize'] = 10, 10
         
         ptslist = self.D.get_xyloc()
         
@@ -377,6 +377,67 @@ class candidateNetwork(DiGraph):
 
         plt.plot(xss, yss, 'o', color='green', mew=0.000000001, alpha=0.1)
         
+        
+        #plot asset markers
+        for key in self.assetsXY.keys():
+            x = self.assetsXY[key][0]
+            y = self.assetsXY[key][1]
+            if "node" in key:
+                plt.plot(x,y, marker='o', mfc='orange', ms=5, mec='black')
+            elif "source" in key:
+                plt.plot(x,y, marker="s", mfc='black', ms=5, mec='black')
+                plt.plot(x,y, marker=f"${key}$", mfc='black', ms=40, mec='black')
+            elif "sink" in key:
+                plt.plot(x,y, marker="s", mfc='yellow', ms=5, mec='red')
+                plt.plot(x,y, marker=f"${key}$", mfc='yellow', ms=30, mec='red')
+        
+        plt.title("Candidate CO2 Sequestration Network")
+        plt.xlabel("X location")
+        plt.ylabel("Y location")
+#         plt.legend()
+        plt.show()
+        
+        return
+
+    def show_solution_network(self, solarcs):
+        rcParams['figure.figsize'] = 10, 8
+        
+        ptslist = self.D.get_xyloc()
+        
+        self._generate_assetsPT()
+        
+        
+        #plot the shortest paths between nodes
+        for key in self.spaths.keys():
+            if ((self.nodesdict[key[0]], self.nodesdict[key[1]]) in solarcs.keys()) \
+                or ((self.nodesdict[key[1]], self.nodesdict[key[0]]) in solarcs.keys()):
+                xs = []
+                ys = []
+                for pt in self.spaths[key]:
+                    xy = self.D.get_xy_from_point(pt)
+                    xs.append(xy[0])
+                    ys.append(xy[1])
+                plt.plot(xs, ys, label=f"path between {self.assetNameFromPT[key[0]]} and {self.assetNameFromPT[key[1]]}", lw = 5)
+
+        #plot all existing pipelines
+        for key in self.existingPathVertices.keys():
+            xp = []
+            yp = []
+            for pt in self.existingPathVertices[key]:
+                xy = self.D.get_xy_from_point(pt)
+                xp.append(xy[0])
+                yp.append(xy[1])
+            plt.plot(xp, yp, 'cyan', lw=6, alpha=0.5)
+        
+        #plot the gridcelll
+        xss = []
+        yss = []
+        for pt in list(ptslist.keys()):
+            xys = self.D.get_xy_from_point(pt)
+            xss.append(xys[0])
+            yss.append(xys[1])
+
+        plt.plot(xss, yss, 'o', color='green', mew=0.000000001, alpha=0.1)
         
         #plot asset markers
         for key in self.assetsXY.keys():
@@ -689,23 +750,23 @@ class candidateNetwork(DiGraph):
 
         
     def export_network(self):
-        nodesdict = {}
+        self.nodesdict = {}
         nodenames = []
         idx = 1
         pipe_idx = 1
         for key,value in self.assetNameFromPT.items():
             for pipeline in self.existingPath.keys():
                 if pipeline in value:
-                    nodesdict[key] = f'{pipeline}_TS'+str(pipe_idx)
+                    self.nodesdict[key] = f'{pipeline}_TS'+str(pipe_idx)
                     nodenames.append(f'{pipeline}_TS'+str(pipe_idx))
                     pipe_idx+=1
                     break           
-            if ('from' in value) and (key not in nodesdict.keys()):
-                nodesdict[key] = 'TS'+str(idx)
+            if ('from' in value) and (key not in self.nodesdict.keys()):
+                self.nodesdict[key] = 'TS'+str(idx)
                 nodenames.append('TS'+str(idx))
                 idx+=1
-            elif key not in nodesdict.keys():
-                nodesdict[key] = value
+            elif key not in self.nodesdict.keys():
+                self.nodesdict[key] = value
                 nodenames.append(value)
                 
         # print("nodesdict: ", nodesdict)
@@ -717,8 +778,8 @@ class candidateNetwork(DiGraph):
         
         
         for key, value in self.spathsCost.items():
-            node1 = nodesdict[key[0]]
-            node2 = nodesdict[key[1]]
+            node1 = self.nodesdict[key[0]]
+            node2 = self.nodesdict[key[1]]
             arcsCost[(node1, node2)] = value
             arcsCost[(node2, node1)] = value
             arcsLength[(node1, node2)] = self.spathsLength[key]
