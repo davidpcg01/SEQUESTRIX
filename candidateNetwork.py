@@ -36,7 +36,7 @@ class candidateNetwork(DiGraph):
         
     
     def initialize_dummy_cost_surface(self):
-        C = dummyCostSurface(self.n, lowcost=1, highcost=60, ctype='float')
+        C = dummyCostSurface(self.n, lowcost=1, highcost=2, ctype='int')
         C.generate_cost_surface()
         
         self.add_nodes_from(C.get_vertices())
@@ -246,8 +246,6 @@ class candidateNetwork(DiGraph):
             self.assetNameFromPT[self.assetsPT[key]] = key
             
         for key in self.assetsXY.keys():
-#             print(key)
-#             print(self.assetsXY[key])
             self.assetNameFromXY[(self.assetsXY[key][0], self.assetsXY[key][1])] = key
             
     
@@ -342,7 +340,7 @@ class candidateNetwork(DiGraph):
         print(len(self.assetsPT), len(self.assetsXY))
     
     def show_candidate_network(self):
-        rcParams['figure.figsize'] = 20, 20
+        rcParams['figure.figsize'] = 10, 8
         
         ptslist = self.D.get_xyloc()
         
@@ -669,7 +667,6 @@ class candidateNetwork(DiGraph):
     def shortest_paths_post_process(self):
         spaths = self.spaths.copy()
         spathsCost = self.spathsCost.copy()
-        
         for key in self.spaths.keys():
             if ((key[0], key[1]) in spaths.keys()) and ((key[1], key[0]) in spaths.keys()):
                 del spaths[(key[1], key[0])]
@@ -741,15 +738,15 @@ class candidateNetwork(DiGraph):
                 nodes_b[node] = self.assetCap[node]
 
         #define all arc info [length, weight, w_cost, lower_bound, upper_bound]
-        arcsInfo = {key:[arcsLength[key],arcsWeight[key],arcsCost[key], 0, 1e9] for key in arcsCost.keys()}
+        arcsInfo = {key:[arcsLength[key],arcsWeight[key],arcsCost[key], 0, 1e3] for key in arcsCost.keys()}
 
         for arc in arcs:
             arc_1 = arc[0].split("_")[0]
             arc_2 = arc[1].split("_")[0]
             if arc_1 == arc_2:
                 if arc_1 in self.existingPathBounds.keys():
-                    arcsInfo[arc][1] = self.existingPathBounds[arc_1][0]
-                    arcsInfo[arc][2] = self.existingPathBounds[arc_1][1]
+                    arcsInfo[arc][3] = self.existingPathBounds[arc_1][0]
+                    arcsInfo[arc][4] = self.existingPathBounds[arc_1][1]
         
         
 

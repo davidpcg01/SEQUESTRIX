@@ -22,10 +22,10 @@ g.import_pipeline(input_dir='Existing Pipeline.xlsx', pathname='pipeline1')
 
 
 #Enter source and sink locations:
-#source: (sourceName, X, Y, AnnualCO2Cap)
-#sink: (sinkName, X, Y, TotalCO2Cap)
-sources = [('source 1', 10, 18, 1), ('source 2', 20, 75, 2), ('source 3', 50, 50, 1)]
-sinks = [('sink 1', 80, 35, 20), ('sink 2', 80, 90, 15)]
+#source: (sourceName, X, Y, AnnualCO2Cap in MTCO2/yr)
+#sink: (sinkName, X, Y, TotalCO2Cap in MTCO2)
+sources = [('source_1', 10, 18, 1), ('source_2', 20, 75, 20), ('source_3', 50, 50, 1)]
+sinks = [('sink_1', 80, 35, 50), ('sink_2', 80, 90, 40)]
 
 g.add_sources(sources)
 g.add_sinks(sinks)
@@ -76,13 +76,16 @@ nodes, arcs, costs, paths, b = g.export_network()
 # print(" ")
 # print(b)
 
-nodesCost = {'source 1': 20, 'source 2': 15, 'source 3': 18, 'sink 1': -31, 'sink 2': -31}
+nodesCost = {'source_1': 2, 'source_2': 1.5, 'source_3': 1.8, 'sink_1': -31, 'sink_2': -31}
+duration = 10 #yrs
+target_cap = 10 #MTCO2
 
 #initialize network model
-model = Math_model(nodes, b, arcs, costs, nodesCost, 10)
+model = Math_model(nodes, b, arcs, costs, paths, nodesCost, duration, target_cap)
 model.build_model()
-model._print_sets()
-model._print_parameters()
+model.solve_model()
+# model._print_sets()
+# model._print_parameters()
 
 end = time.time() #end timer
 

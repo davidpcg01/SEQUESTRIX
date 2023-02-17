@@ -9,3 +9,8 @@ untitled1.ipynb
 /__pycache__
 /.ipynb_checkpoints
 CO2 PIPELINE NETWORK OPT.ipynb
+CO2_network_optimization.lp
+CO2_network_optimization.mps
+CO2_network_optimization.ilp
+CO2_network_optimization.sol
+model_solve.log
