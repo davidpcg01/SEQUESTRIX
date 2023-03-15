@@ -14,3 +14,5 @@ CO2_network_optimization.mps
 CO2_network_optimization.ilp
 CO2_network_optimization.sol
 model_solve.log
+Construction Costs.csv
+geocost.csv

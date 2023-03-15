@@ -6,7 +6,7 @@ import time
 start = time.time() #start timer
 
 #Build graph  
-g = candidateNetwork(n=100)
+g = candidateNetwork(width=100, height=100)
 g.initialize_dummy_cost_surface()
 
 
@@ -35,7 +35,7 @@ g.generateDelaunayNetwork()
 #     g.add_Delaunay_tiepoints(tiepts)
 
 #show Delaunay network
-# g.showDelaunayNetwork()
+g.showDelaunayNetwork()
 
 # #enforce pipeline tie in points
 # pipetiept1 = (30, 7)
@@ -60,19 +60,17 @@ g.show_candidate_network()
 nodes, arcs, costs, paths, b = g.export_network()
 
 
-# nodesCost = {'source_1': 2, 'source_2': 1.5, 'source_3': 1.8, 'sink_1': -31, 'sink_2': -31}
+#set project parameters
 duration = 10 #yrs
-target_cap = 10 #MTCO2
+target_cap = 40 #MTCO2
+
+print(costs)
 
 #initialize network model
 model = Math_model(nodes, b, arcs, costs, paths, nodesCost, duration, target_cap)
 model.build_model()
 model.solve_model()
 soln_arcs = model.get_soln_arcs()
-# model._print_sets()
-# model._print_parameters()
-
-# print(soln_arcs)
 
 g.show_solution_network(soln_arcs)
 

@@ -15,7 +15,7 @@ logging.basicConfig(filename='model_solve.log', filemode='w', level=logging.DEBU
 START_TIME = time.time()
 
 class Math_model:
-    def __init__(self, nodes, nodesValue, arcs, arcsInfo, paths, nodesCost, duration, target_cap) -> None:
+    def __init__(self, nodes, nodesValue, arcs, arcsInfo, paths, nodesCost, duration, target_cap, crf=0.1) -> None:
         self.nodes = nodes #contains nodenames in format [node1, node2]
         self.arcs = arcs #contains arcs in the format [(node1, node2)]
         self.nodesValue = nodesValue #contains node capacity values in format {node:cap}
@@ -24,6 +24,7 @@ class Math_model:
         self.nodesCost = nodesCost #contains capture and storage cost for sources and sinks in data in format {source:cap_cost, sink:storage_cost}
         self.duration = duration #duration of project
         self.target_cap = target_cap  #amount of C02 you want to be stored in tCO2/yr. note input will be given as MTCO2/yr
+        self.crf = crf
 
 
         self._initialize_sets()
@@ -374,7 +375,7 @@ class Math_model:
         transport_flow_cost = sum(2 * self.vars['arc_flow'][node1, node2] * self.duration * 1e-6 for (node1, node2) in self.a_a) # $/tCO2 * tCO2/yr * yr  * 1e-6 = $M
 
         pipeline_build_cost = sum(self.vars['arc_build_cost'][node1, node2] * 0.97 * self.vars['arc_built'][node1, node2] * 
-                                    self.arc_cost[node1, node2] * 0.1 #CRF of 0.1 assumed
+                                    self.arc_cost[node1, node2] * self.crf 
                                         for (node1, node2) in self.a_a) # $M * {0, 1} = $M
 
         obj =  capture_cost + storage_cost + transport_flow_cost + pipeline_build_cost

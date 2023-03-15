@@ -8,10 +8,11 @@ rcParams['figure.figsize'] = 10, 8
 
 
 class networkDelanunay:
-    def __init__(self, N):
+    def __init__(self, width, height):
         self.firstPtInsert = False
         self.points = []
-        self.N = N
+        self.width = width
+        self.height = height
         self.dtriangles = []
         self.xyloc = {}
         self.Tlines = []
@@ -54,9 +55,9 @@ class networkDelanunay:
         x = 1
         y = 1
         
-        for i in range(1, ((self.N+1)**2)+1):
+        for i in range(1, ((self.height+1)*(self.width+1))+1):
             loc[i] = [x,y]
-            if x%(self.N+1) == 0:
+            if x%(self.width+1) == 0:
                 x = 1
                 y += 1
             else:
@@ -74,7 +75,6 @@ class networkDelanunay:
             lines.append([[pt1, pt2], [pt2, pt3], [pt1, pt3]])
         
         self.Tlines = lines.copy()
-        
 
 
     def extractUniqueLines(self):
@@ -82,6 +82,7 @@ class networkDelanunay:
         for i in range(len(self.Tlines)):
             for j in range(0, 3):
                 all_arrays.append(list(self.Tlines[i][j]))
+
         
         result = []
         for i in range(0, len(all_arrays)):
@@ -91,6 +92,7 @@ class networkDelanunay:
                 result.append(all_arrays[i])
         
         self.lines = result.copy()
+
         
     def getPoints(self):
         return self.points
@@ -119,10 +121,13 @@ class networkDelanunay:
         self.generatepointxyloc()
         self.conDTriang_to_line()
         self.extractUniqueLines()
+
         
     def getDelaunayNetwork(self):
         return self.lines
     
+    def getDelaunayNetwork_geo(self):
+        return self.lines_geo
     
     def add_tie_in_point(self, tiepoint, targetsource_sink):
         tieptloc = self.get_point_from_xy(tiepoint[0], tiepoint[1])
@@ -144,12 +149,12 @@ class networkDelanunay:
     
 if __name__ == '__main__':
     points = np.array([[10,18],[20,75],[50,50],[80,35], [80,90]])
-    N = 100
-    D = networkDelanunay(N)
+    D = networkDelanunay(width=683, height=333)
     D.add_points_from_list(points)
    
     
     D.createDelaunayNetwork()
     print(D.getDelaunayNetwork())
+    # print(D.getDelaunayNetwork_geo())
     D.plotNetwork()
 

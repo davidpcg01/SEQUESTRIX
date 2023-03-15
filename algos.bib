@@ -1,0 +1,197 @@
+ALGORITHM TO ADD EXISTING PIPELINE TO NETWORK GRAPH
+Step 1: Convert discrete pipeline lat-long points to edges
+
+Input: loc_points, a set of discrete pipeline lat-long points
+Output: loc_pair, a list of edge pairs
+    Create a new variable: loc_pair = list()
+    for i in range(len(loc_points) - 1):
+        loc_pair.append((loc_points[i], loc_points[i+1]))
+    Find cell location of loc_pair points and assign to cell_pair using findCell function
+    fora i in range(len(loc_pair)):
+        cell1 = findCell(loc_pair[i][0])
+        cell2 = findCell(loc_pair[i][1])
+        cell_pair.append((cell1, cell2))
+
+Step 2: Modify cell_pair to include edges from shortest paths algorithm
+
+Input: cell_pair, a list of edge pairs; edges, a set of edges in G(V, E)
+Output: cell_pair_mod, a modified list of edge pairs
+
+    Create a new variable: cell_pair_mod = list()
+    for nodepair in cell_pair:
+        if nodepair in edges:
+            cell_pair_mod.append(nodepair)
+        else:
+            path = shortest_path(source=nodepair[0], destination=nodepair[1], weight=1)
+            forall edge in path:
+                cell_pair_mod.append(edge)
+
+
+Step 3: Modify graph G(V, E) and set all edge weights for edges in cell_pair_mod to zero
+
+Input: G(V, E), a cost surface graph; cell_pair_mod, a modified list of edge pairs
+Output: G'(V, E'), a modified cost surface graph with edge weights set to zero
+    forall nodepair in cell_pair_mod:
+        G.edges[nodepair][weight] = 0
+
+
+#ALGORITHM TO CONVERT MAP SURFACE TO GRAPH VERTICES AND EDGES 
+1. Input: four numeric variables: north, south, east, west
+2. Create four more variables: nw = (north, west), ne = (north, east), sw = (south, west), se = (south, east)
+3. Input: grid_spacing = n #meters
+4. Calculate width as the distance between nw and ne
+5. Calculate height as the distance between ne and se
+6. Set num_rows as the integer value of height / grid_spacing
+7. Set num_cols as the integer value of width / grid_spacing
+8. Set grid = list()
+9. For i in range(len(num_rows)):
+   	 point_a = (south, west)
+   	 point_b = (x, west) #where x the latitude where the distance between point_a and point_b is equal to grid_spacing*i
+   	 row = list()
+   	For j in range(len(num_cols)):
+   		 point_c = (x, y) #where y the longitude where the distance between point_b and   point_c is equal to grid_spacing
+   		 row.append(point_c)
+   	 grid.append(row)
+10. Output: grid
+
+
+
+ALGORITHM FOR TIE-IN LOCATIONS
+
+Algorithm 1
+Input: G(V, E) a cost surface graph; P(V), a list of graph vertices along an existing pipeline; 
+tie_points, a list containing geolocation of 2 preffered tie-in points on existing pipeline
+Output: G'(V, E'), a modified cost surface graph with some edge weights along pipeline vertices set to 1e9
+
+Create A list: tie_vertices = list()
+forall nodepair in tie_points:
+    cell = findCell(nodepair)
+    tie_vertices.append(cell)
+
+forall edges in G.edges:
+    #in
+    if (edges[1] in P) and (edges[0] not in P) and (edges[1] != tie_vertices[0]) and (edges[1] != tie_vertices[1]):
+        G.edges[edges][weight] = 1e9
+    
+    #out
+    if (edges[0] in P) and (edges[1] not in P) and (edges[0] !+ tie_vertices[0]) and (edges[0] != tie_vertices[1]):
+        G.edges[edges][weight] = 1e9
+
+
+
+Algorithm 2
+Input: G(V, E) a cost surface graph; P(V), a list of graph vertices along an existing pipeline; 
+tie_points, a list containing geolocation of 2 preffered tie-in points on existing pipeline
+Output: G'(V, E'), a modified cost surface graph with some edge weights along pipeline vertices set to 1e9
+
+Create A list: tie_vertices = list()
+forall nodepair in tie_points:
+    cell = findCell(nodepair)
+    tie_vertices.append(cell)
+
+Create A list: exclusion = list()
+idx_1 = P.index(tie_vertices[0]) #index location of point1
+idx_2 = P.index(tie_vertices[1]) #index location of point2
+exclusion = P[:idx_1] + P[idx_2:] #slice P and get points before and after tie points on both sides
+
+forall edges in G.edges:
+    #in
+    if (edges[1] in exclusion) and (edges[0] not in P) and (edges[1] != tie_vertices[0]) and (edges[1] != tie_vertices[1]):
+        G.edges[edges][weight] = 1e9
+    
+    #out
+    if (edges[0] in exclusion) and (edges[1] not in P) and (edges[0] != tie_vertices[0]) and (edges[0] != tie_vertices[1]):
+        G.edges[edges][weight] = 1e9
+
+
+Algorithm 3
+Input: G(V, E) a cost surface graph; P(V), a list of graph vertices along an existing pipeline; 
+tie_points, a list containing geolocation of 1 preffered tie-in point on existing pipeline
+Output: G'(V, E'), a modified cost surface graph with some edge weights along pipeline vertices set to 1e9
+
+Create A list: tie_vertices = list()
+forall nodepair in tie_points:
+    cell = findCell(nodepair)
+    tie_vertices.append(cell)
+
+Create A list: exclusion = list()
+exclusion = P[:-1] #assuming source/sink is at end of pipeline OR
+exclusion = P[1:] #assuming source/sink is at beigining of pipeline
+
+
+forall edges in G.edges:
+    #in
+    if (edges[1] in exclusion) and (edges[0] not in P) and (edges[1] != tie_vertices[0]) and (edges[1] != tie_vertices[1]):
+        G.edges[edges][weight] = 1e9
+    
+    #out
+    if (edges[0] in exclusion) and (edges[1] not in P) and (edges[0] != tie_vertices[0]) and (edges[0] != tie_vertices[1]):
+        G.edges[edges][weight] = 1e9
+
+
+Algorithm 4
+Input: G(V, E) a cost surface graph; P(V), a list of graph vertices along an existing pipeline; 
+tie_points, a list containing geolocation of 1 preffered tie-in point on existing pipeline
+Output: G'(V, E'), a modified cost surface graph with some edge weights along pipeline vertices set to 1e9
+
+Create A list: tie_vertices = list()
+forall nodepair in tie_points:
+    cell = findCell(nodepair)
+    tie_vertices.append(cell)
+
+Create A list: exclusion = list()
+exclusion = P[:P.index(tie_vertices[0])] #assuming exclusion zone is before tie-in point OR
+exclusion = P[P.index(tie_vertices[0])+1:] #assuming exclusion zone is after tie-in point
+
+
+forall edges in G.edges:
+    #in
+    if (edges[1] in exclusion) and (edges[0] not in P) and (edges[1] != tie_vertices[0]) and (edges[1] != tie_vertices[1]):
+        G.edges[edges][weight] = 1e9
+    
+    #out
+    if (edges[0] in exclusion) and (edges[1] not in P) and (edges[0] != tie_vertices[0]) and (edges[0] != tie_vertices[1]):
+        G.edges[edges][weight] = 1e9
+
+
+
+ALGORITHM FOR DIAGONAL EXCLUSION ZONES
+
+Input: G(V, E) a cost surface graph; P(E), a list of graph edges along a generated alternate pipeline; 
+pipeline width n
+Output: G'(V, E'), a modified cost surface graph with some edge weights along pipeline vertices set to 1e9
+
+for all edgepair in P:
+    if diff(edgpair) = n+2:
+        lower_diag = min(edgepair)+1
+        upper_diag = max(nodepair)-1
+
+        G.edges[(lower_diag, upper_diag)][weight] = 1e9
+
+    else if diff(edgpair) = n:
+        lower_diag = min(nodepair)-1
+        upper_diag = max(nodepair)+1
+
+        G.edges[(lower_diag, upper_diag)][weight] = 1e9
+
+
+
+for pathname in self.existingPath.keys():
+            for nodepair in self.existingPath[pathname]:
+                if abs(nodepair[0] - nodepair[1]) == self.width+2:
+                    lower_diag = min(nodepair) + 1
+                    upper_diag = max(nodepair) - 1
+                    
+                    if (lower_diag, upper_diag) in edges:
+                        self.edges[(lower_diag, upper_diag)]['weight'] = 1e9
+                    if (upper_diag, lower_diag) in edges:
+                        self.edges[(upper_diag, lower_diag)]['weight'] = 1e9
+                    
+                elif abs(nodepair[0] - nodepair[1]) == self.width:
+                    lower_diag = min(nodepair) - 1
+                    upper_diag = max(nodepair) + 1
+                    
+                    if (lower_diag, upper_diag) in edges:
+                        self.edges[(lower_diag, upper_diag)]['weight'] = 1e9
+                    if (upper_diag, lower_diag) in edges:
+                        self.edges[(upper_diag, lower_diag)]['weight'] = 1e9

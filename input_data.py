@@ -27,6 +27,8 @@ class InputData:
         self.source_var_cost = list(self.source_df['Operating Cost ($/tCO2)'].values)
         self.sourceX = list(self.source_df['X loc'].values)
         self.sourceY = list(self.source_df['Y loc'].values)
+        self.sourceLat = list(self.source_df['Lat'].values)
+        self.sourceLon = list(self.source_df['Lon'].values)
 
         #dictionaries
         self.sourceID_Name = dict(zip(self.sourceID, self.sourceName))
@@ -36,9 +38,11 @@ class InputData:
         self.sourceID_VC = dict(zip(self.sourceID, self.source_var_cost))
         self.sourceID_X = dict(zip(self.sourceID, self.sourceX))
         self.sourceID_Y = dict(zip(self.sourceID, self.sourceY))
+        self.sourceID_Lat = dict(zip(self.sourceID, self.sourceLat))
+        self.sourceID_Lon = dict(zip(self.sourceID, self.sourceLon))
 
         #get input for candidateNetwork Model
-        self.sourceCandidate = [(id, self.sourceID_X[id], self.sourceID_Y[id], self.sourceID_cap[id])
+        self.sourceCandidate = [(id, self.sourceID_Lat[id], self.sourceID_Lon[id], self.sourceID_cap[id])
                                     for id in self.sourceID]
         
         #get input costs for Math_model
@@ -59,6 +63,8 @@ class InputData:
         self.sink_var_cost = list(self.sink_df['Operating Cost ($/tCO2)'].values)
         self.sinkX = list(self.sink_df['X loc'].values)
         self.sinkY = list(self.sink_df['Y loc'].values)
+        self.sinkLat = list(self.sink_df['Lat'].values)
+        self.sinkLon = list(self.sink_df['Lon'].values)
 
         #dictionaries
         self.sinkID_Name = dict(zip(self.sinkID, self.sinkName))
@@ -68,9 +74,11 @@ class InputData:
         self.sinkID_VC = dict(zip(self.sinkID, self.sink_var_cost))
         self.sinkID_X = dict(zip(self.sinkID, self.sinkX))
         self.sinkID_Y = dict(zip(self.sinkID, self.sinkY))
+        self.sinkID_Lat = dict(zip(self.sinkID, self.sinkLat))
+        self.sinkID_Lon = dict(zip(self.sinkID, self.sinkLon))
 
         #get input for candidateNetwork Model
-        self.sinkCandidate = [(id, self.sinkID_X[id], self.sinkID_Y[id], self.sinkID_cap[id])
+        self.sinkCandidate = [(id, self.sinkID_Lat[id], self.sinkID_Lon[id], self.sinkID_cap[id])
                                     for id in self.sinkID]
         
         #get input costs for Math_model
@@ -96,7 +104,7 @@ class InputData:
 
 
 if __name__ == '__main__':
-    data = InputData('TestInput.xlsx')
+    data = InputData('TestInput2.xlsx')
     data._read_data()
     source, sink, costs = data.process_data()
 

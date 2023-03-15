@@ -13,9 +13,10 @@ from itertools import combinations
 rcParams['figure.figsize'] = 10, 8
 
 class candidateNetwork(DiGraph):
-    def __init__(self, n=100):
+    def __init__(self, width=100, height=100):
         super().__init__()
-        self.n = n
+        self.width = width
+        self.height = height
         self.existingPath = {}
         self.existingPathVertices = {}
         self.existingPathType = {}
@@ -36,7 +37,7 @@ class candidateNetwork(DiGraph):
         
     
     def initialize_dummy_cost_surface(self):
-        C = dummyCostSurface(self.n, lowcost=1, highcost=60, ctype='int')
+        C = dummyCostSurface(width=self.width, height=self.height, lowcost=1, highcost=60, ctype='float')
         C.generate_cost_surface()
         
         self.add_nodes_from(C.get_vertices())
@@ -193,14 +194,14 @@ class candidateNetwork(DiGraph):
     def enforce_no_pipeline_diagonal_Xover(self):
         for pathname in self.existingPath.keys():
             for nodepair in self.existingPath[pathname]:
-                if abs(nodepair[0] - nodepair[1]) == self.n+2:
+                if abs(nodepair[0] - nodepair[1]) == self.width+2:
                     lower_diag = min(nodepair) + 1
                     upper_diag = max(nodepair) - 1
                     
                     self.edges[(lower_diag, upper_diag)]['weight'] = 1e9
                     self.edges[(upper_diag, lower_diag)]['weight'] = 1e9
                     
-                elif abs(nodepair[0] - nodepair[1]) == self.n:
+                elif abs(nodepair[0] - nodepair[1]) == self.width:
                     lower_diag = min(nodepair) - 1
                     upper_diag = max(nodepair) + 1
                     
@@ -210,14 +211,14 @@ class candidateNetwork(DiGraph):
     
     def enforce_no_path_diagonal_Xover(self, path_tup):
         for nodepair in path_tup:
-            if abs(nodepair[0] - nodepair[1]) == self.n+2:
+            if abs(nodepair[0] - nodepair[1]) == self.width+2:
                 lower_diag = min(nodepair) + 1
                 upper_diag = max(nodepair) - 1
                     
                 self.edges[(lower_diag, upper_diag)]['weight'] = 1e9
                 self.edges[(upper_diag, lower_diag)]['weight'] = 1e9
                     
-            elif abs(nodepair[0] - nodepair[1]) == self.n:
+            elif abs(nodepair[0] - nodepair[1]) == self.width:
                 lower_diag = min(nodepair) - 1
                 upper_diag = max(nodepair) + 1
                     
@@ -251,7 +252,7 @@ class candidateNetwork(DiGraph):
     
     
     def generateDelaunayNetwork(self):
-        self.D = networkDelanunay(self.n)
+        self.D = networkDelanunay(width=self.width, height=self.height)
         assets = []
         for key, asset in self.assetsXY.items():
             assets.append(asset)
@@ -728,6 +729,7 @@ class candidateNetwork(DiGraph):
     def shortest_paths_post_process(self):
         spaths = self.spaths.copy()
         spathsCost = self.spathsCost.copy()
+        
         for key in self.spaths.keys():
             if ((key[0], key[1]) in spaths.keys()) and ((key[1], key[0]) in spaths.keys()):
                 del spaths[(key[1], key[0])]
@@ -825,7 +827,7 @@ if __name__ == '__main__':
     start = time.time() #start timer
 
     #Build graph  
-    g = candidateNetwork(n=100)
+    g = candidateNetwork(width=100, height=100)
     g.initialize_dummy_cost_surface()
 
     

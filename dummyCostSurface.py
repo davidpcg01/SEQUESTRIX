@@ -3,8 +3,9 @@ import numpy as np
 import csv
 
 class dummyCostSurface:
-    def __init__(self, n, lowcost=1, highcost=2, ctype='int'):
-        self.n = n
+    def __init__(self, width=100, height=90, lowcost=1, highcost=2, ctype='int'):
+        self.width = width
+        self.height = height 
         self.ctype = ctype
         self.lowcost = lowcost
         self.highcost = highcost
@@ -17,11 +18,11 @@ class dummyCostSurface:
         
     
     def initialize_vertices(self):
-        for i in range(1, ((self.n+1)**2)+1):
+        for i in range(1, ((self.width+1)*(self.height+1))+1):
             self.vertices.append(i)
     
     def initialize_edges(self):
-        n = self.n
+        n = self.width
         edges = []
         for v in self.vertices:
             if v%(n+1) == 0:
@@ -135,6 +136,9 @@ class dummyCostSurface:
     def get_ebunch(self):
         return self.ebunch
     
+    def get_neighbors(self):
+        return self.neighbors
+    
     def writeGraphToCsv(self, name):
         with open(name+'.csv', 'w', encoding='UTF8', newline='') as f:
             writer = csv.writer(f)
@@ -155,7 +159,8 @@ if __name__ == '__main__':
     print(C.get_vertices())
     print("")
     #print(C.get_edgesWDict())
-    print(C.get_ebunch())
+    # print(C.get_ebunch())
+    print(C.get_neighbors())
     
     #C.writeGraphToCsv("newTest")
 
