@@ -104,7 +104,6 @@ if st.session_state.dur is None:
 elif duration_input == "":
     st.session_state.dur = ""
 elif (duration_input) and (duration_input != st.session_state.dur):
-    st.write(duration_input, st.session_state.dur)
     st.session_state.dur = duration_input
 
 if st.session_state.target is None:
