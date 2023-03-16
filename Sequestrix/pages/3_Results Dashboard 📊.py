@@ -10,6 +10,9 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Results Dashboard", page_icon="📊", layout="wide")
 
+if "solved" not in st.session_state:
+        st.session_state["solved"] = False
+
 OUTPUT_FILE_PATH = os.path.join("Sequestrix/app/output_files/solution_file.csv")
 
 def read_result(filename=OUTPUT_FILE_PATH):
