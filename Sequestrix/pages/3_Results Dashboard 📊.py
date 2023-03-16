@@ -71,13 +71,6 @@ def read_result(filename=OUTPUT_FILE_PATH):
 
     return df_capture, df_storage, df_transport, dur, target, total_cap       
 
-df_capture, df_storage, df_transport, dur, target, total_cap = read_result()
-df_capture["Total CO2 Captured (MTCO2)"] = df_capture["Capture Amount (MTCO2/yr)"] * dur
-df_storage["Total CO2 Stored (MTCO2)"] = df_storage["Storage Amount (MTCO2/yr)"] * dur
-df_transport["Pipeline Arcs"] = df_transport["Start Point"] + ' - ' + df_transport['End Point'] 
-
-
-
 def ColourWidgetText(wgt_txt, wch_colour = '#000000'):
     htmlstr = """<script>var elements = window.parent.document.querySelectorAll('*'), i;
                     for (i = 0; i < elements.length; ++i) { if (elements[i].innerText == |wgt_txt|) 
@@ -89,6 +82,11 @@ def ColourWidgetText(wgt_txt, wch_colour = '#000000'):
 
 tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Capture", "Storage", "Transport"])
 if st.session_state.solved:
+    df_capture, df_storage, df_transport, dur, target, total_cap = read_result()
+    df_capture["Total CO2 Captured (MTCO2)"] = df_capture["Capture Amount (MTCO2/yr)"] * dur
+    df_storage["Total CO2 Stored (MTCO2)"] = df_storage["Storage Amount (MTCO2/yr)"] * dur
+    df_transport["Pipeline Arcs"] = df_transport["Start Point"] + ' - ' + df_transport['End Point'] 
+
     with tab1:
         col1, col2, col3, col4 = st.columns([2,2,2,1])
         col1.metric("Project Duration (yrs)", dur)
