@@ -1,8 +1,8 @@
 numpy
 scipy
 pandas
-gurpbipy
-network
+gurobipy
+networkx
 matplotlib
 plotly
 geopy
