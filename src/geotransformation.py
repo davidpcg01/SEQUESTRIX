@@ -8,7 +8,7 @@ from bisect import bisect_left, bisect_right
 from pathlib import Path
 
 ROOT_PATH = Path(__file__).parent.parent.resolve()
-FILE_PATH = ROOT_PATH.joinpath("Construction Costs.csv")
+FILE_PATH = ROOT_PATH.joinpath("construction-costs-subset.csv")
 
 
 

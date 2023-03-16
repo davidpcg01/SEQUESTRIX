@@ -5,10 +5,16 @@ import time
 from geopy.point import Point
 from geopy.distance import distance
 from bisect import bisect_left, bisect_right
+from pathlib import Path
+
+ROOT_PATH = Path(__file__).parent.parent.resolve()
+FILE_PATH = ROOT_PATH.joinpath("construction-costs-subset.csv")
+
+
 
 class geoTransformation:
     def __init__(self) -> None:
-        self.costFilePath = r"C:\Users\david\CO2 TRANSPORT NETWORK MODEL\Construction Costs.csv"
+        self.costFilePath = FILE_PATH
         self.gridcost = {}
         self.gridCostList = []
         self.gridTranslated = False
