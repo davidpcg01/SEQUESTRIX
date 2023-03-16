@@ -27,7 +27,7 @@ PIPELINE_FILE_PATH = os.path.join("Sequestrix/app/pipeline_files/Pipeline_File.x
 OUTPUT_FILE_PATH = os.path.join("Sequestrix/app/output_files/solution_file")
 
 
-keys_to_track = ["solveButton", "p3_fig1", "p3_fig2", "p3_fig3", "dur", "target", "crf"]
+keys_to_track = ["solveButton", "p3_fig1", "p3_fig2", "p3_fig3", "dur", "target", "crf", "solved"]
 
 for key in keys_to_track:
     if key not in st.session_state:
@@ -211,7 +211,7 @@ def solveModel(pipe_path, input_path, dur, tar, crf=0.01):
             counter += 24
             my_bar.progress(counter, text=progress_text)
         
-
+        st.session_state.solved = True
         st.success('Optimization Complete!', icon="✅")
     
     return fig1, fig2, fig3
@@ -223,6 +223,7 @@ def solveModel(pipe_path, input_path, dur, tar, crf=0.01):
 tab1, tab2, tab3 = st.tabs(["Delanuay Triangulation △", "Alternate Pipeline Routes ⇎", "Solution Network Map 🗾"])
 
 if solveButton:
+    st.session_state.solved = False
     fig1, fig2, fig3 = solveModel(pipe_path=st.session_state.PIPELINE_FILE, input_path=st.session_state.INPUT_FILE, dur=st.session_state.dur,
                             tar=st.session_state.target, crf=0.01)
 
@@ -230,7 +231,7 @@ if solveButton:
     st.session_state.p3_fig2 = fig2
     st.session_state.p3_fig3 = fig3
     
-if st.session_state.solveButton:
+if st.session_state.solveButton and st.session_state.solved:
     with tab1:
         st.plotly_chart(st.session_state.p3_fig1, use_container_width=True)
 

@@ -1,5 +1,5 @@
 construction_cost.csv
-#Existing Pipeline.xlsx
+Existing Pipeline.xlsx
 newTest.csv
 test1.csv
 candidateNetwork.ipynb
@@ -19,3 +19,21 @@ geocost.csv
 Sequestrix/app/input_files/Input_File.xlsx
 Sequestrix/app/pipeline_files/Pipeline_File.xlsx
 Sequestrix/app/output_files/solution_file.csv
+TestInput2.xlsx
+test2.csv
+norman_grid.html
+alternateNetworkGeo.py
+Candidate Network 2.ipynb
+Candidate Network 3.ipynb
+candidateNetwork.py
+dummyCostSurface.ipynb
+dummyCostSurface.py
+geotransformation.py
+input_data.py
+main.py
+main2.py
+math_model.py
+math_model2.py
+networkDelanunay.ipynb
+networkDelanunay.py
+algos.bib
