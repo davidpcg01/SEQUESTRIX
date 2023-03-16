@@ -871,7 +871,7 @@ class alternateNetworkGeo(DiGraph):
 
     def _getDelaunayMapFig(self):
         assets_subset = self.assets_df[self.assets_df["Type"].isin(["source", "sink"])]
-        fig1 = px.scatter_mapbox(assets_subset, lat="Lat", lon="Lon", hover_name="Name", color="Type", zoom=10, height=1000, width=1000, size="Lat", 
+        fig1 = px.scatter_mapbox(assets_subset, lat="Lat", lon="Lon", hover_name="Name", color="Type", zoom=7, height=1000, width=1000, size="Lat", 
                                 color_discrete_map={"source":"red", "sink":"green"})
         fig1.update_layout(mapbox_style="open-street-map")
 
@@ -891,7 +891,7 @@ class alternateNetworkGeo(DiGraph):
         return fig1
 
     def _getAlternateNetworkMapFig(self):
-        fig2 = px.scatter_mapbox(self.assets_df, lat="Lat", lon="Lon", hover_name="Name", color="Type", zoom=10, height=1000, width=1000, size="Lat", 
+        fig2 = px.scatter_mapbox(self.assets_df, lat="Lat", lon="Lon", hover_name="Name", color="Type", zoom=7, height=1000, width=1000, size="Lat", 
                                 color_discrete_map={"source":"red", "sink":"green",  "node":"orange"})
         fig2.update_layout(mapbox_style="open-street-map")
 
@@ -908,7 +908,7 @@ class alternateNetworkGeo(DiGraph):
         return fig2
     
     def _getSolnNetworkMapFig(self, soln_arcs):              
-        fig3 = px.scatter_mapbox(self.assets_df, lat="Lat", lon="Lon", hover_name="Name", color="Type", zoom=10, height=1000, width=1000, size="Lat", 
+        fig3 = px.scatter_mapbox(self.assets_df, lat="Lat", lon="Lon", hover_name="Name", color="Type", zoom=7, height=1000, width=1000, size="Lat", 
                                 color_discrete_map={"source":"red", "sink":"green",  "node":"orange"})
         fig3.update_layout(mapbox_style="open-street-map")
 
@@ -946,18 +946,6 @@ class alternateNetworkGeo(DiGraph):
                 solnkeys.append((pipe[0], pipe[1], 'n'))
             elif ((self.nodesdict[pipe[1]], self.nodesdict[pipe[0]]) in soln_arcs.keys()):
                 solnkeys.append((pipe[0], pipe[1], 'r'))
-                
-
-        resultdict = {}
-        # for solnkey in solnkeys:
-        #     path = self.spaths[solnkey]
-        #     path_geo = []
-        #     for i in range(len(path)-1):
-        #         lat1, lon1 = self.gt._cellToLatLon(path[i])
-        #         lat2, lon2 = self.gt._cellToLatLon(path[i+1])
-        #         path_geo.append(((lat1, lon1), (lat2, lon2)))
-        #     length = self.spathsLength[solnkey]
-        #     resultdict[solnkey] = {"length": length, "path": path_geo}
 
         resultdict2 = {}
         for solnkey in solnkeys:
@@ -974,7 +962,7 @@ class alternateNetworkGeo(DiGraph):
                 path_geo.reverse()
                 resultdict2[(self.nodesdict[solnkey[1]], self.nodesdict[solnkey[0]])] = {"length": length, "path": path_geo}
 
-        return resultdict, resultdict2
+        return resultdict2
 
 
         

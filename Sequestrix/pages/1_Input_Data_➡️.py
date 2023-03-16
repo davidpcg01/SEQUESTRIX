@@ -14,19 +14,13 @@ STRIX_PATH = ROOT_PATH / "Sequestrix"
 sys.path.append(STRIX_PATH)
 
 
+keys_to_track = ["INPUT_FILE", "PIPELINE_FILE"]
 
-keys_to_track = ["INPUT_FILE"]
+for key in keys_to_track:
+    if key not in st.session_state:
+        st.session_state[key] = None
 
-# for key in st.session_state.keys():
-#     del st.session_state[key]
 
-# for key in keys_to_track:
-#     if key not in st.session_state:
-#         st.session_state[key] = None
-
-"st.session_state_object:", st.session_state
-
-# st.write(os.getcwd())
 def save_uploaded_file(file, type):
     if type == "inp":
         with open(os.path.join("Sequestrix/app/input_files/Input_File.xlsx"), "wb") as f:
@@ -35,67 +29,68 @@ def save_uploaded_file(file, type):
         with open(os.path.join("Sequestrix/app/pipeline_files/Pipeline_File.xlsx"), "wb") as f:
             f.write(file.getbuffer())
 
-# st.write(sys.path)
+
 with st.sidebar:
-    # st.write("#### Upload :green[Input File]")
+    #input file
     INPUT_FILE = st.file_uploader("Upload :green[Input File]", help="Upload Excel Input File")
     if INPUT_FILE:
+        st.write(":green[Uploaded File: ]", INPUT_FILE.name)
         save_uploaded_file(INPUT_FILE, "inp")
+    elif st.session_state["INPUT_FILE"]:
+        st.write(":green[Showing File: ]", st.session_state.INPUT_FILE.name)
+        
+
+    #pipeline file
     PIPELINE_FILE = st.file_uploader("Upload :green[Pipeline Input]", help="Upload Excel File With Pipeline Details")
     if PIPELINE_FILE:
+        st.write(":green[Uploaded File: ]", PIPELINE_FILE.name)
         save_uploaded_file(PIPELINE_FILE, "pipe")
 
-st.session_state["INPUT_FILE"] = INPUT_FILE
 
-"st.session_state_object:", st.session_state
+#SESSION STATE PERSISTENCE
+if st.session_state["INPUT_FILE"] is None:
+    st.session_state["INPUT_FILE"] = INPUT_FILE
+elif (INPUT_FILE) and (INPUT_FILE != st.session_state.INPUT_FILE):
+    st.session_state["INPUT_FILE"] = INPUT_FILE
 
-@st.cache_data
-def getfig1(source_df):
-    st.markdown(f"#### Available Annual Capture Volume: {round(source_df['Capture Capacity (MTCO2/yr)'].sum(), 2)} MTCO2/yr")
-    fig = px.pie(source_df, values="Capture Capacity (MTCO2/yr)", names="UNIQUE NAME", hole=.5, color_discrete_sequence=px.colors.sequential.RdBu)
-    return fig
-
-@st.cache_data
-def getfig2(source_df):
-    st.markdown("#### Unit Capture Cost")
-    fig2 = px.bar(source_df, x="UNIQUE NAME", y="Total Unit Cost ($/tCO2)", color_discrete_sequence=px.colors.sequential.RdBu)
-    return fig2
-
-
-
-
+if st.session_state["PIPELINE_FILE"] is None:
+    st.session_state["PIPELINE_FILE"] = PIPELINE_FILE
+elif (PIPELINE_FILE) and (PIPELINE_FILE != st.session_state.PIPELINE_FILE):
+    st.session_state["PIPELINE_FILE"] = PIPELINE_FILE
 
 
 
 def showInputResults():
     tab1, tab2, tab3 = st.tabs(["CO2 Sources", "CO2 Sinks", "Network Map"])
-    if st.session_state.INPUT_FILE is not None:
+    if st.session_state.INPUT_FILE:
         with tab1:
-            source_df = pd.read_excel(INPUT_FILE, sheet_name="sources")
+            source_df = pd.read_excel(st.session_state.INPUT_FILE, sheet_name="sources")
             fig_col1, fig_col2 = st.columns(2)
             with fig_col1:
-                fig = getfig1(source_df)
-                st.write(fig)
+                st.markdown(f"#### Available Annual Capture Volume: {round(source_df['Capture Capacity (MTCO2/yr)'].sum(), 2)} MTCO2/yr")
+                fig = px.pie(source_df, values="Capture Capacity (MTCO2/yr)", names="UNIQUE NAME", hole=.5, color_discrete_sequence=px.colors.sequential.RdBu)
+                st.plotly_chart(fig, use_container_width=True)
 
             with fig_col2:
-                fig2 = getfig2(source_df)
-                st.write(fig2)
+                st.markdown("#### Unit Capture Cost")
+                fig2 = px.bar(source_df, x="UNIQUE NAME", y="Total Unit Cost ($/tCO2)", color_discrete_sequence=px.colors.sequential.RdBu)
+                st.plotly_chart(fig2, use_container_width=True)
 
             with st.expander("See CO2 Souces Input Table"):
                 st.dataframe(source_df)
 
         with tab2:
-            sink_df = pd.read_excel(INPUT_FILE, sheet_name="sinks")
+            sink_df = pd.read_excel(st.session_state.INPUT_FILE, sheet_name="sinks")
             fig_col1, fig_col2 = st.columns(2)
             with fig_col1:
                 st.markdown(f"#### Available Total Storage Volume: {round(sink_df['Storage Capacity (MTCO2)'].sum(), 2)} MTCO2")
                 fig3 = px.pie(sink_df, values="Storage Capacity (MTCO2)", names="UNIQUE NAME", hole=.5, color_discrete_sequence=px.colors.sequential.Emrld)
-                st.write(fig3)
+                st.plotly_chart(fig3, use_container_width=True)
 
             with fig_col2:
                 st.markdown("#### Unit Storage Cost")
                 fig4 = px.bar(sink_df, x="UNIQUE NAME", y="Total Unit Cost ($/tCO2)", color_discrete_sequence=px.colors.sequential.Emrld)
-                st.write(fig4)
+                st.plotly_chart(fig4, use_container_width=True)
 
             with st.expander("See CO2 Sinks Input Table"):
                 st.dataframe(sink_df)
@@ -118,7 +113,7 @@ def showInputResults():
             fig5 = px.scatter_mapbox(merged, lat="Lat", lon="Lon", hover_name="Name", color="Type", zoom=8, height=1000, width=1200, size="Lat", 
                                     color_discrete_map={"source":"red", "sink":"green"})
             fig5.update_layout(mapbox_style="open-street-map")
-            st.write(fig5)
+            st.plotly_chart(fig5, use_container_width=True)
 
 
             with st.expander("See Geolocation Input Data"):

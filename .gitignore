@@ -16,3 +16,6 @@ CO2_network_optimization.sol
 model_solve.log
 Construction Costs.csv
 geocost.csv
+Sequestrix/app/input_files/Input_File.xlsx
+Sequestrix/app/pipeline_files/Pipeline_File.xlsx
+Sequestrix/app/output_files/solution_file.csv

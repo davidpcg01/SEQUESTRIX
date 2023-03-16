@@ -26,6 +26,14 @@ INPUT_FILES_PATH = os.path.join("Sequestrix/app/input_files/Input_File.xlsx")
 PIPELINE_FILE_PATH = os.path.join("Sequestrix/app/pipeline_files/Pipeline_File.xlsx")
 OUTPUT_FILE_PATH = os.path.join("Sequestrix/app/output_files/solution_file")
 
+
+keys_to_track = ["solveButton", "p3_fig1", "p3_fig2", "p3_fig3", "dur", "target", "crf"]
+
+for key in keys_to_track:
+    if key not in st.session_state:
+        st.session_state[key] = None
+
+
 def writeSoln(dur: int, target: float, crf: float, soln_arcs : Dict, soln_sources: Dict, soln_sinks: Dict, 
               soln_cap_costs: Dict, soln_storage_costs: Dict, soln_transport_costs: Dict, pipeResult, filename=OUTPUT_FILE_PATH):
     total_captured = sum(soln_sources.values())
@@ -67,15 +75,52 @@ start_time = time.time()
 
 
 with st.sidebar:
-    duration_input = st.text_input('Enter Sequestration Project Duration Length (yrs)')
-    target_Cap_input = st.number_input('Enter CO2 Sequestration Target in MTCO2/yr')
-    crf_input = st.number_input('Enter Capital Recovery Factor as Fraction')
+    if st.session_state.dur is None:
+        duration_input = st.text_input('Enter Sequestration Project Duration Length (yrs)')
+    else:
+        duration_input = st.text_input('Enter Sequestration Project Duration Length (yrs)', value=st.session_state.dur)
+
+    if st.session_state.target is None:
+        target_Cap_input = st.number_input('Enter CO2 Sequestration Target in MTCO2/yr')
+    else:
+        target_Cap_input = st.number_input('Enter CO2 Sequestration Target in MTCO2/yr', value=st.session_state.target)
+
+    if st.session_state.crf is None:
+        crf_input = st.number_input('Enter Capital Recovery Factor as Fraction')
+    else:
+        crf_input = st.number_input('Enter Capital Recovery Factor as Fraction', value=st.session_state.crf)
+    
     solveButton = st.button("Solve Model")
 
 
-tab1, tab2, tab3 = st.tabs(["Delanuay Triangulation △", "Alternate Pipeline Routes ⇎", "Solution Network Map 🗾"])
+#SESSION STATE PERSISTENCE
+if st.session_state.solveButton is None:
+    st.session_state.solveButton = solveButton
+elif (solveButton) and (solveButton != st.session_state.solveButton):
+    st.session_state.solveButton = solveButton
 
-if solveButton:
+if st.session_state.dur is None:
+    st.session_state.dur = duration_input
+elif duration_input == "":
+    st.session_state.dur = ""
+elif (duration_input) and (duration_input != st.session_state.dur):
+    st.write(duration_input, st.session_state.dur)
+    st.session_state.dur = duration_input
+
+if st.session_state.target is None:
+    st.session_state.target = target_Cap_input
+elif (target_Cap_input) and (target_Cap_input != st.session_state.target):
+    st.session_state.target = target_Cap_input
+
+if st.session_state.crf is None:
+    st.session_state.crf = crf_input
+elif (crf_input) and (crf_input != st.session_state.crf):
+    st.session_state.crf = crf_input
+
+
+#DEFINE SOLVE FUNCTION WITH CACHE
+@st.cache_data
+def solveModel(pipe_path, input_path, dur, tar, crf=0.01):
     with st.sidebar:
         progress_text = "CO2 Network Optimization in progress. Please wait."
         my_bar = st.progress(0, text=progress_text)
@@ -98,12 +143,12 @@ if solveButton:
             my_bar.progress(counter, text=progress_text)
 
 
-            if os.path.exists(PIPELINE_FILE_PATH):
-                g.import_pipeline_lat_long(input_dir=PIPELINE_FILE_PATH)
+            if pipe_path:
+                g.import_pipeline_lat_long(input_dir=pipe_path)
 
-            if os.path.exists(INPUT_FILES_PATH):
+            if input_path:
                 #Import source and sink info
-                data = InputData(INPUT_FILES_PATH)
+                data = InputData(input_path)
                 data._read_data()
                 sources, sinks, nodesCost = data.process_data()
                 g.add_sources(sources)
@@ -130,8 +175,8 @@ if solveButton:
             counter += 20
             my_bar.progress(counter, text=progress_text)
 
-            global fig1
-            global fig2
+            # global fig1
+            # global fig2
 
             fig1 = g._getDelaunayMapFig()
             fig2 = g._getAlternateNetworkMapFig()
@@ -140,8 +185,8 @@ if solveButton:
             nodes, arcs, costs, paths, b = g.export_network()
 
             #set project parameters
-            duration = int(duration_input) #yrs
-            target_cap = target_Cap_input #MTCO2/yr
+            duration = int(dur) #yrs
+            target_cap = tar #MTCO2/yr
 
 
             #initialize network model
@@ -149,43 +194,51 @@ if solveButton:
             model.build_model()
             model.solve_model()
 
-            #declare global variables for all result dicts
-            # global soln_arcs
-            # global soln_sources
-            # global soln_sinks
-            # global soln_cap_costs
-            # global
             
             #EXTRACT KEY RESULTS
             soln_arcs, soln_sources, soln_sinks, soln_cap_costs, soln_storage_costs, soln_transport_costs = model.get_all_soln_results()
-            pipe_result1, pipe_result2 = g._getSolnResults(soln_arcs)
+            pipe_result = g._getSolnResults(soln_arcs)
 
-            print(pipe_result1)
-            print("")
-            print(pipe_result2)
 
             writeSoln(duration, target_cap, crf_input, soln_arcs, soln_sources, soln_sinks, soln_cap_costs,
-                      soln_storage_costs, soln_transport_costs, pipe_result2)
+                    soln_storage_costs, soln_transport_costs, pipe_result)
 
 
             #extract final plot and update progress bar
-            global fig3
+            # global fig3
             fig3 = g._getSolnNetworkMapFig(soln_arcs)    
             time.sleep(3.6)
             counter += 24
             my_bar.progress(counter, text=progress_text)
-          
+        
 
         st.success('Optimization Complete!', icon="✅")
+    
+    return fig1, fig2, fig3
 
+
+
+# st.session_state
+
+tab1, tab2, tab3 = st.tabs(["Delanuay Triangulation △", "Alternate Pipeline Routes ⇎", "Solution Network Map 🗾"])
+
+if solveButton:
+    fig1, fig2, fig3 = solveModel(pipe_path=st.session_state.PIPELINE_FILE, input_path=st.session_state.INPUT_FILE, dur=st.session_state.dur,
+                            tar=st.session_state.target, crf=0.01)
+
+    st.session_state.p3_fig1 = fig1
+    st.session_state.p3_fig2 = fig2
+    st.session_state.p3_fig3 = fig3
+    
+if st.session_state.solveButton:
     with tab1:
-        st.write(fig1)
+        st.plotly_chart(st.session_state.p3_fig1, use_container_width=True)
 
     with tab2:
-        st.write(fig2)
+        st.plotly_chart(st.session_state.p3_fig2, use_container_width=True)
 
     with tab3:
-        st.write(fig3)
+        st.plotly_chart(st.session_state.p3_fig3, use_container_width=True)
 
 
 
