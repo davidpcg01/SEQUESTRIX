@@ -418,7 +418,7 @@ class Math_model:
         self.model.write(LP_FILE_PATH)
         self.model.write(MPS_FILE_PATH)
         
-        if (self.model.NumVars <= 10) and (self.model.NumConstrs <= 10):
+        if (self.model.NumVars <= 2000) and (self.model.NumConstrs <= 2000):
             #solve model
             self.model.optimize()
             LOGGER.info(f'Model Status: {self.model.status}')
