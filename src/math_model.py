@@ -1,3 +1,6 @@
+import os
+import pulp as pl
+from pulp import *
 from typing import Dict, List, Set
 import pandas as pd
 import numpy as np
@@ -8,6 +11,12 @@ from gurobipy import GRB
 from alternateNetworkGeo import alternateNetworkGeo
 import time
 import datetime
+
+
+MPS_FILE_PATH = os.path.join("Sequestrix/app/solver_files/CO2_network_optimization.mps")
+LP_FILE_PATH = os.path.join("Sequestrix/app/solver_files/CO2_network_optimization.lp")
+SOL_FILE_PATH = os.path.join("Sequestrix/app/solver_files/CO2_network_optimization.sol")
+ILP_FILE_PATH = os.path.join("Sequestrix/app/solver_files/CO2_network_optimization.ilp")
 
 LOGGER = logging.getLogger(__name__)
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -35,6 +44,14 @@ class Math_model:
 
         self.vars: Dict[str, gp.tupledict] = {}
         self.cons: Dict[str, gp.tupledict] = {}
+
+        self.Big_M = 56.46 #max flow allowed in a pipeline tCO2/yr
+        self.LTrend = 6.86 #upperbound flow for lower pipeline trend tCO2/yr
+
+        self.costTrend = {"Slope": [0.1157192, 0.0783067],
+                          "Intercept": [0.4316551, 0.770037]} #trends of pipeline cost relating MTCO2/ to $M/yr
+        
+        self.c = len(self.costTrend["Slope"])
     
 
     
@@ -89,7 +106,7 @@ class Math_model:
             if (a, b) not in seen:
                 seen[(a,b)] = True
                 if (b, a) in seen:
-                    result.append((a,b))
+                    result.append((b,a))
 
         self.two_way_arcs = set(result)
 
@@ -115,8 +132,17 @@ class Math_model:
                                 else self.storage_var_cost[key] for key in self.sink}
 
         #arc parameters
-        self.max_arc_cap = {key:self.arcsInfo[key][4] for key in self.a_a}
-        self.min_arc_cap = {key:self.arcsInfo[key][3] for key in self.a_a}
+        self.MaxCap = sum(self.source_annual_cap.values()) #maximum possible flow
+        self.MidCap = ((self.costTrend["Intercept"][1] - self.costTrend["Intercept"][0]) / (self.costTrend["Slope"][0] - self.costTrend["Slope"][1]))
+
+
+        # self.max_arc_cap = {key:self.arcsInfo[key][4] for key in self.a_a}
+        self.max_arc_cap = {(akey[0], akey[1], ckey):self.arcsInfo[akey][4] if self.arcsInfo[akey][4] < self.MidCap else self.MidCap if ckey == 0 else self.MaxCap 
+                            for akey in self.a_a for ckey in range(self.c)}
+
+        # self.min_arc_cap = {key:self.arcsInfo[key][3] for key in self.a_a}
+        self.min_arc_cap = {(akey[0], akey[1], ckey):self.arcsInfo[akey][3] if self.arcsInfo[akey][3] > 0 else 0
+                            for akey in self.a_a for ckey in range(self.c)}
         self.arc_length = {key:self.arcsInfo[key][0] for key in self.a_a} 
         self.arc_weight = {key:self.arcsInfo[key][1] for key in self.a_a} 
         self.arc_cost = {key:self.arcsInfo[key][2] for key in self.a_a}
@@ -154,7 +180,7 @@ class Math_model:
     
     def create_variables(self) -> None:
         #flow from node 1 to node 2 in network (tCO2/yr)
-        index = ((node1, node2) for (node1, node2) in self.a_a)
+        index = ((node1, node2, c) for (node1, node2) in self.a_a for c in range(self.c))
         self.vars['arc_flow'] = self.model.addVars(index, name='arc_flow', lb=0, vtype=GRB.CONTINUOUS)
 
         #amount of CO2 captured at source (tCO2/yr)
@@ -166,7 +192,7 @@ class Math_model:
         self.vars['CO2_injected'] = self.model.addVars(index, name='CO2_injected', lb=0, vtype=GRB.CONTINUOUS)
 
         #indicator for if pipeline arc connecting node 1 to 2 is built
-        index = ((node1, node2) for (node1, node2) in self.a_a)
+        index = ((node1, node2, c) for (node1, node2) in self.a_a for c in range(self.c))
         self.vars['arc_built'] = self.model.addVars(index, name='arc_built', vtype=GRB.BINARY)
 
         #indicator is source is opened
@@ -176,10 +202,6 @@ class Math_model:
         #indicator is sink is opened
         index = (sink for sink in self.sink)
         self.vars['sink_opened'] = self.model.addVars(index, name='sink_opened', vtype=GRB.BINARY)
-
-        #arc build cost
-        index = ((node1, node2) for (node1, node2) in self.a_a)
-        self.vars['arc_build_cost'] = self.model.addVars(index, name='arc_build_cost', lb=0, vtype=GRB.CONTINUOUS)
 
 
 
@@ -191,23 +213,24 @@ class Math_model:
 
     def _arc_upper_lower_bound_cons(self) -> None:
         cons_name = 'arc_lower_bound'
-        constr = (self.min_arc_cap[node1, node2] * 1e6 * self.vars['arc_built'][node1, node2] #conversion min cap from MTCO2/yr to tCO2/yr 
-                    <= self.vars['arc_flow'][node1, node2] 
-                    for (node1, node2) in self.a_a)
+        constr = ((self.min_arc_cap[node1, node2, c]) * self.vars['arc_built'][node1, node2, c] #conversion min cap from MTCO2/yr to tCO2/yr 
+                    <= self.vars['arc_flow'][node1, node2, c] 
+                    for (node1, node2) in self.a_a
+                    for c in range(self.c))
         self.cons[cons_name] = self.model.addConstrs(constr, name=cons_name)
 
         cons_name = 'arc_upper_bound'
-        constr = (self.max_arc_cap[node1, node2] * 1e6 * self.vars['arc_built'][node1, node2] #conversion max cap from MTCO2/yr to tCO2/yr 
-                    >= self.vars['arc_flow'][node1, node2]  
-                    for (node1, node2) in self.a_a)
+        constr = ((self.max_arc_cap[node1, node2, c]) * self.vars['arc_built'][node1, node2, c] #conversion max cap from MTCO2/yr to tCO2/yr 
+                    >= self.vars['arc_flow'][node1, node2, c]  
+                    for (node1, node2) in self.a_a
+                    for c in range(self.c))
         self.cons[cons_name] = self.model.addConstrs(constr, name=cons_name)
 
 
     def _single_direction_arc_flow_cons(self) -> None:
         cons_name = 'arc_single_dir_flow'
-        constr = (self.vars['arc_built'][node1, node2] 
-                    + self.vars['arc_built'][node2, node1] <= 1
-                    for (node1, node2) in self.two_way_arcs)
+        constr = (sum(self.vars['arc_built'][node1, node2, c] for c in range(self.c)) <= 1
+                  for (node1, node2) in self.a_a)
         self.cons[cons_name] =  self.model.addConstrs(constr, name=cons_name)
 
 
@@ -220,8 +243,8 @@ class Math_model:
                         for n in self.node}
 
         cons_name = 'node_balance'
-        constr = (sum(self.vars['arc_flow'][a,n] for a in asset_to_node[n])
-                    == sum(self.vars['arc_flow'][n,a] for a in node_to_asset[n])
+        constr = (sum(self.vars['arc_flow'][a,n,c1] for a in asset_to_node[n] for c1 in range(self.c))
+                    == sum(self.vars['arc_flow'][n,a,c2] for a in node_to_asset[n] for c2 in range(self.c))
                     for n in self.node)
         self.cons[cons_name] = self.model.addConstrs(constr, name=cons_name)
         
@@ -235,8 +258,8 @@ class Math_model:
                         for d in self.sink}
 
         cons_name = 'demand_balance'
-        constr = (sum(self.vars['arc_flow'][a,d] for a in asset_to_demand[d])*self.duration / 1e6 #convert tCO2/yr to MTCO2
-                    - sum(self.vars['arc_flow'][d,a] for a in demand_to_asset[d])*self.duration / 1e6
+        constr = (sum(self.vars['arc_flow'][a,d,c1] for a in asset_to_demand[d] for c1 in range(self.c))*self.duration  #convert tCO2/yr to MTCO2
+                    - sum(self.vars['arc_flow'][d,a,c2] for a in demand_to_asset[d] for c2 in range(self.c))*self.duration 
                     == self.vars['CO2_injected'][d] #MTCO2
                     for d in self.sink)
         self.cons[cons_name] = self.model.addConstrs(constr, name=cons_name)
@@ -251,8 +274,8 @@ class Math_model:
                         for s in self.src}
 
         cons_name = 'supply_balance'
-        constr = (sum(self.vars['arc_flow'][a,s] for a in asset_to_supply[s]) / 1e6 #convert tCO2/yr to MTCO2/yr
-                    - sum(self.vars['arc_flow'][s,a] for a in supply_to_asset[s]) / 1e6
+        constr = (sum(self.vars['arc_flow'][a,s,c1] for a in asset_to_supply[s] for c1 in range(self.c))  #convert tCO2/yr to MTCO2/yr
+                    - sum(self.vars['arc_flow'][s,a,c2] for a in supply_to_asset[s] for c2 in range(self.c)) 
                     == -self.vars['CO2_captured'][s] #MTCO2/yr
                     for s in self.src)
         self.cons[cons_name] = self.model.addConstrs(constr, name=cons_name)
@@ -280,12 +303,8 @@ class Math_model:
                     >= self.target_cap)
         self.cons[cons_name] = self.model.addConstr(constr, name=cons_name)
 
-    def _calculate_build_cost_cons(self) -> None:
-        cons_name = 'calc_arc_build_cost'
-        constr = ((0.11571952 * self.vars['arc_flow'][node1, node2] * 1e-6) + 0.431655132 \
-                    == self.vars['arc_build_cost'][node1, node2]
-                    for (node1, node2) in self.a_a)
-        self.cons[cons_name] = self.model.addConstrs(constr, name=cons_name)
+
+
 
 
 
@@ -330,11 +349,7 @@ class Math_model:
                % (time.time() - START_TIME))
         print(msg)
         LOGGER.info(msg)
-        self._calculate_build_cost_cons()
-        msg = ("'Build Cost calculation' constraint: Time elapsed: %.2f seconds"
-               % (time.time() - START_TIME))
-        print(msg)
-        LOGGER.info(msg)
+
 
 
 
@@ -372,13 +387,21 @@ class Math_model:
         storage_cost = sum((self.storage_fixed_cost[d] * self.vars['sink_opened'][d]) + # $M * {0,1} = $M
                             (self.storage_v_cost[d] * self.vars['CO2_injected'][d]) for d in self.sink) # $/tCO2 * MTCO2 = $M
         
-        transport_flow_cost = sum(2 * self.vars['arc_flow'][node1, node2] * self.duration * 1e-6 for (node1, node2) in self.a_a) # $/tCO2 * tCO2/yr * yr  * 1e-6 = $M
 
-        pipeline_build_cost = sum(self.vars['arc_build_cost'][node1, node2] * 0.97 * self.vars['arc_built'][node1, node2] * 
-                                    self.arc_cost[node1, node2] * self.crf 
-                                        for (node1, node2) in self.a_a) # $M * {0, 1} = $M
+        transport_flow_cost = sum((self.costTrend["Slope"][c] * self.vars['arc_flow'][node1, node2, c]) 
+                                  *  self.arc_cost[node1, node2] * self.crf * self.duration
+                                        for (node1, node2) in self.a_a
+                                        for c in range(self.c)) # $M * {0, 1} = $M
+
+
+
+        pipeline_build_cost = sum((self.costTrend["Intercept"][c] * self.vars['arc_built'][node1, node2, c]) 
+                                  *  self.arc_cost[node1, node2] * self.crf * self.duration
+                                        for (node1, node2) in self.a_a
+                                        for c in range(self.c)) # $M * {0, 1} = $M
 
         obj =  capture_cost + storage_cost + transport_flow_cost + pipeline_build_cost
+  
 
 
         self.model.setObjective(obj, GRB.MINIMIZE)
@@ -388,50 +411,125 @@ class Math_model:
         LOGGER.info('Evauating "minimum cost" objective function')
         self.create_objective()
         LOGGER.info('Objective function "mimumum cost" evaluated')
+        self.use_pulp = False
         
         #set numrerical focus to 2
-        self.model.setParam('NumericFocus', 2)
+        # self.model.setParam('NumericFocus', 2)
         #output lp and mps files
-        self.model.write('CO2_network_optimization.lp')
-        self.model.write('CO2_network_optimization.mps')
+        self.model.write(LP_FILE_PATH)
+        self.model.write(MPS_FILE_PATH)
         
-        #solve model
-        self.model.optimize()
-        LOGGER.info(f'Model Status: {self.model.status}')
-        if self.model.status == GRB.INFEASIBLE:
-            self.model.computeIIS()
-            self.model.write('CO2_network_optimization.ilp')
-        elif self.model.status == GRB.INF_OR_UNBD:
-            self.model.setParam('DualReductions', 0)
+        if (self.model.NumVars <= 2000) and (self.model.NumConstrs <= 2000):
+            #solve model
             self.model.optimize()
+            LOGGER.info(f'Model Status: {self.model.status}')
             if self.model.status == GRB.INFEASIBLE:
                 self.model.computeIIS()
-                self.model.write('CO2_network_optimization.ilp')
-        else:
-            self.objective = self.model.ObjVal
+                self.model.write(ILP_FILE_PATH)
+            elif self.model.status == GRB.INF_OR_UNBD:
+                self.model.setParam('DualReductions', 0)
+                self.model.optimize()
+                if self.model.status == GRB.INFEASIBLE:
+                    self.model.computeIIS()
+                    self.model.write(ILP_FILE_PATH)
+            else:
+                self.objective = self.model.ObjVal
 
-            #write solution
-            self.model.write('CO2_network_optimization.sol')
-            self.extract_soln_arcs()
-        LOGGER.info("Time elapsed: %.2f seconds" % (time.time() - START_TIME))
+                #write solution
+                self.model.write(SOL_FILE_PATH)
+                self.extract_results()
+            LOGGER.info("Time elapsed: %.2f seconds" % (time.time() - START_TIME))
+        else:
+            LOGGER.info("Model is too large for Gurobipy free licence, switching to CPLEX")
+            self.use_pulp=True
+            self.pulp_var, self.pulp_model = LpProblem.fromMPS(MPS_FILE_PATH)
+            self.pulp_solver = pl.CPLEX_CMD(msg=False)
+            self.pulp_model.solve(self.pulp_solver)
+            if self.pulp_model.status == 1:
+                #write soln
+                self.extract_pulp_variables()
+                self.extract_results()
+            LOGGER.info("Time elapsed: %.2f seconds" % (time.time() - START_TIME))
+                
+
+    def extract_pulp_variables(self) -> None:
+        prob1 = self.pulp_model
+        arc_flow_keys = {}
+        co2_captured_keys = {}
+        co2_injected_keys = {}
+        arc_built_keys = {}
+        src_opened_keys = {}
+        sink_opened_keys = {}
+
+        for v in prob1.variables():
+            if "arc_flow" in v.name:
+                key1 = v.name.split(",")[0][9:]
+                key2 = v.name.split(",")[1]
+                key3 = int(v.name.split(",")[2].split("_")[0])
+                arc_flow_keys[(key1, key2, key3)] = v.varValue
+            if "CO2_captured" in v.name:
+                key = v.name.split("_")[2] + "_" + v.name.split("_")[3]
+                co2_captured_keys[key] = v.varValue
+            if "CO2_injected" in v.name:
+                key = v.name.split("_")[2] + "_" + v.name.split("_")[3]
+                co2_injected_keys[key] = v.varValue
+            if "arc_built" in v.name:
+                key1 = v.name.split(",")[0][10:]
+                key2 = v.name.split(",")[1]
+                key3 = int(v.name.split(",")[2].split("_")[0])
+                arc_built_keys[(key1, key2, key3)] = v.varValue
+            if "src_opened" in v.name:
+                key = v.name.split("_")[2] + "_" + v.name.split("_")[3]
+                src_opened_keys[key] = v.varValue
+            if "sink_opened" in v.name:
+                key = v.name.split("_")[2] + "_" + v.name.split("_")[3]
+                sink_opened_keys[key] = v.varValue
+
+        # Write the solution to a .sol file
+        with open(SOL_FILE_PATH, "w") as f:
+            f.write("# Solution for model CO2_network_optimization \n")
+            f.write(f"# Objective value = {value(prob1.objective)} \n")
+            for key in arc_flow_keys.keys():
+                f.write(f"arc_flow[{key[0]},{key[1]},{key[2]}] {arc_flow_keys[key]} \n")
+            for key in co2_captured_keys.keys():
+                f.write(f"CO2_captured[{key}] {co2_captured_keys[key]} \n")
+            for key in co2_injected_keys.keys():
+                f.write(f"CO2_injected[{key}] {co2_injected_keys[key]} \n")
+            for key in arc_built_keys.keys():
+                f.write(f"arc_built[{key[0]},{key[1]},{key[2]}] {int(arc_built_keys[key])} \n")
+            for key in src_opened_keys.keys():
+                f.write(f"src_opened[{key}] {int(src_opened_keys[key])} \n")
+            for key in sink_opened_keys.keys():
+                f.write(f"sink_opened[{key}] {int(sink_opened_keys[key])} \n")
+
+        self.arc_flow_keys = arc_flow_keys
+        self.co2_captured_keys = co2_captured_keys
+        self.co2_injected_keys = co2_injected_keys
+        self.arc_built_keys = arc_built_keys
+        self.src_opened_keys = src_opened_keys
+        self.sink_opened_keys = sink_opened_keys
+
+        
 
     
     def extract_soln_arcs(self) -> None:
         self.soln_arcs = {}
         for arc in self.vars['arc_flow']:
-            if self.vars['arc_flow'][arc].X > 0.001:
+            if self.vars['arc_flow'][arc].X > 0:
                 self.soln_arcs[arc] = self.vars['arc_flow'][arc].X
+        
+        self.soln_arcs_a = {(arc[0], arc[1]):self.soln_arcs[arc] for arc in self.soln_arcs.keys()}
 
     def extract_activated_source(self) -> None:
         self.soln_sources = {}
         for src in self.vars['CO2_captured']:
-            if self.vars['CO2_captured'][src].X > 0.0001:
+            if self.vars['CO2_captured'][src].X > 0:
                 self.soln_sources[src] = self.vars['CO2_captured'][src].X
 
     def extract_activated_sinks(self) -> None:
         self.soln_sinks = {}
         for sink in self.vars['CO2_injected']:
-            if self.vars['CO2_injected'][sink].X > 0.0001:
+            if self.vars['CO2_injected'][sink].X > 0:
                 self.soln_sinks[sink] = self.vars['CO2_injected'][sink].X
 
     def extract_costs(self) -> None:
@@ -447,21 +545,95 @@ class Math_model:
             s_cost = self.storage_fixed_cost[sink] + (self.storage_v_cost[sink] * self.soln_sinks[sink])
             self.soln_storage_costs[sink] = s_cost
         
-        # for arc in self.soln_arcs.keys():
-        #     tf_cost = 
+        for arc in self.soln_arcs.keys():
+            tf_cost = (self.costTrend["Slope"][arc[2]] * self.vars['arc_flow'][arc].x ) *  self.arc_cost[(arc[0], arc[1])] * self.crf * self.duration
+            tb_cost = (self.costTrend["Intercept"][arc[2]] * self.vars['arc_built'][arc].x) *  self.arc_cost[(arc[0], arc[1])] * self.crf * self.duration
 
-        #     transport_flow_cost = sum(2 * self.vars['arc_flow'][node1, node2] * self.duration * 1e-6 for (node1, node2) in self.a_a) # $/tCO2 * tCO2/yr * yr  * 1e-6 = $M
+            t_cost = tf_cost + tb_cost
+            self.soln_transport_costs[arc] = t_cost
 
-        # pipeline_build_cost = sum(self.vars['arc_build_cost'][node1, node2] * 0.97 * self.vars['arc_built'][node1, node2] * 
-        #                             self.arc_cost[node1, node2] * self.crf 
-        #                                 for (node1, node2) in self.a_a) # $M * {0, 1} = $M
+            self.soln_transport_costs_a = {(arc[0], arc[1]):self.soln_transport_costs[arc] for arc in self.soln_transport_costs.keys()}
 
 
-       
+    def extract_soln_arcs_p(self) -> None:
+        self.soln_arcs = {}
+        for arc in self.arc_flow_keys.keys():
+            if self.arc_flow_keys[arc] > 0:
+                self.soln_arcs[arc] = self.arc_flow_keys[arc]
+        
+        self.soln_arcs_a = {(arc[0], arc[1]):self.soln_arcs[arc] for arc in self.soln_arcs.keys()}
+    
+    def extract_activated_source_p(self) -> None:
+        self.soln_sources = {}
+        for src in self.co2_captured_keys.keys():
+            if self.co2_captured_keys[src] > 0:
+                self.soln_sources[src] = self.co2_captured_keys[src]
 
+    def extract_activated_sinks_p(self) -> None:
+        self.soln_sinks = {}
+        for sink in self.co2_injected_keys.keys():
+            if self.co2_injected_keys[sink] > 0:
+                self.soln_sinks[sink] = self.co2_injected_keys[sink]
+    
+
+    def extract_costs_p(self) -> None:
+        self.soln_cap_costs = {} #$M
+        self.soln_storage_costs = {} #$M
+        self.soln_transport_costs = {}
+        
+        for src in self.soln_sources.keys():
+            c_cost = (self.capture_fixed_cost[src] + (self.capture_v_cost[src] * self.soln_sources[src] * self.duration)) 
+            self.soln_cap_costs[src] = c_cost
+        
+        for sink in self.soln_sinks.keys():
+            s_cost = self.storage_fixed_cost[sink] + (self.storage_v_cost[sink] * self.soln_sinks[sink])
+            self.soln_storage_costs[sink] = s_cost
+        
+        for arc in self.soln_arcs.keys():
+            tf_cost = (self.costTrend["Slope"][arc[2]] * self.arc_flow_keys[arc] ) *  self.arc_cost[(arc[0], arc[1])] * self.crf * self.duration
+            tb_cost = (self.costTrend["Intercept"][arc[2]] * self.arc_built_keys[arc]) *  self.arc_cost[(arc[0], arc[1])] * self.crf * self.duration
+
+            t_cost = tf_cost + tb_cost
+            self.soln_transport_costs[arc] = t_cost
+
+            self.soln_transport_costs_a = {(arc[0], arc[1]):self.soln_transport_costs[arc] for arc in self.soln_transport_costs.keys()}
+
+    
+
+     
+    def extract_results(self) -> None:
+        if self.use_pulp:
+            self.extract_soln_arcs_p()
+            self.extract_activated_source_p()
+            self.extract_activated_sinks_p()
+            self.extract_costs_p()
+        else:
+            self.extract_soln_arcs()
+            self.extract_activated_source()
+            self.extract_activated_sinks()
+            self.extract_costs()
 
     def get_soln_arcs(self):
-        return self.soln_arcs
+        return self.soln_arcs_a
+    
+    def get_soln_sources(self):
+        return self.soln_sources
+    
+    def get_soln_sinks(self):
+        return self.soln_sinks
+    
+    def get_soln_cap_costs(self):
+        return self.soln_cap_costs
+    
+    def get_soln_storage_costs(self):
+        return self.soln_storage_costs
+    
+    def get_soln_transport_costs(self):
+        return self.soln_transport_costs_a
+    
+    def get_all_soln_results(self):
+        return self.soln_arcs_a, self.soln_sources, self.soln_sinks, self.soln_cap_costs, self.soln_storage_costs, self.soln_transport_costs_a
+    
 
 
     def _print_sets(self) -> None:

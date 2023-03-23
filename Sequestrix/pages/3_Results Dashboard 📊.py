@@ -104,7 +104,6 @@ if st.session_state.solved:
         unit_sto_cost = sum(df_storage["Storage Cost ($M/yr)"]) / sum(df_storage["Storage Amount (MTCO2/yr)"])
         unit_trans_cost = sum(df_transport["Transport Cost ($M/yr)"]) / sum(df_transport["CO2 Transported (MTCO2/yr)"])
         unit_total_cost = unit_sto_cost + unit_trans_cost + unit_cap_cost
-        unit_total_cost = -5
         col5, col6, col7 = st.columns([2,1.9,0.7])
         col5.metric("Unit Capture Cost ($/tCO2)", round(unit_cap_cost,2))
         col6.metric("Unit Storage Cost ($/tCO2)", round(unit_sto_cost,2))
@@ -113,14 +112,23 @@ if st.session_state.solved:
         st.markdown("#")
         st.markdown("#")
 
+        col8, col9, col10 = st.columns([2,1.9,0.7])
+        col9.metric("Total Unit Cost ($/tCO2)", round(unit_total_cost, 2))
+
+        st.markdown("#")
+        st.markdown("#")
+
         if unit_total_cost <= -5:
             st.markdown("<h2 style='text-align: center; color: green;'>Economic Project ✅ </h2>", unsafe_allow_html=True)
+            ColourWidgetText(str(round(unit_total_cost, 2)), 'green')
         
         elif -5 < unit_total_cost < 0:
             st.markdown("<h2 style='text-align: center; color: orange;'> Marginally Economic Project ⚠ </h2>", unsafe_allow_html=True)
+            ColourWidgetText(str(round(unit_total_cost, 2)), 'orange')
 
         else:
             st.markdown("<h2 style='text-align: center; color: red;'> Sub-Economic Project 🛑 </h2>", unsafe_allow_html=True)
+            ColourWidgetText(str(round(unit_total_cost, 2)), 'red')
 
 
         

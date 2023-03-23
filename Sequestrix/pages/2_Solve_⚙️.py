@@ -13,7 +13,7 @@ import numpy as np
 import time
 import os
 import csv
-from math_model2 import Math_model
+from math_model import Math_model
 from networkDelanunay import networkDelanunay
 from alternateNetworkGeo import alternateNetworkGeo
 from input_data import InputData
@@ -68,7 +68,7 @@ def writeSoln(dur: int, target: float, crf: float, soln_arcs : Dict, soln_source
         writer.writerow(["CO2 TRANSPORT PIPELINES SOLUTION BREAKDOWN"])
         writer.writerow(["Start Point", "End Point", "Length (km)", "CO2 Transported (MTCO2/yr)", "Transport Cost ($M/yr)"])
         for arc in soln_arcs.keys():
-            writer.writerow([arc[0], arc[1], pipeResult[arc]["length"], soln_arcs[arc]*1e-6, soln_transport_costs[arc]/dur])
+            writer.writerow([arc[0], arc[1], pipeResult[arc]["length"], soln_arcs[arc], soln_transport_costs[arc]/dur])
         writer.writerow([""])
 
 start_time = time.time()
@@ -189,7 +189,7 @@ def solveModel(pipe_path, input_path, dur, tar, crf=0.01):
 
 
             #initialize network model
-            model = Math_model(nodes, b, arcs, costs, paths, nodesCost, duration, target_cap)
+            model = Math_model(nodes, b, arcs, costs, paths, nodesCost, duration, target_cap, crf=crf_input)
             model.build_model()
             model.solve_model()
 

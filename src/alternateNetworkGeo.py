@@ -69,12 +69,14 @@ class alternateNetworkGeo(DiGraph):
 
         start_time = time.time()
         print("Adding graph Edges...")
+        diagonal_l = np.sqrt(2)*(cellsize/0.008333)
         for key in edges.keys():
             # print(key[0], key[1], edges[key])
             if (abs(key[0] - key[1]) == self.width+1) or (abs(key[0] - key[1]) == self.width-1):
-                approx_l = np.sqrt(2) #km
+                # approx_l = self.gt._getDistance(key[0], key[1]) #km only cal for diagonals TODO: Too time consurming to compute actual diagonal distance
+                approx_l = diagonal_l
             else:
-                approx_l = cellsize #km
+                approx_l = cellsize/0.008333 #km
             self.add_edge(key[0], key[1], weight=edges[key], length=approx_l)
         print("Added Edges. Time Taken: %s seconds" %(time.time() - start_time))
         print("")
@@ -127,8 +129,11 @@ class alternateNetworkGeo(DiGraph):
             if start_nodes[i] != end_nodes[i]:
                 pipe_nodes.append((start_nodes[i], end_nodes[i]))
 
+        # print("PIPE NODES")
+        # print(pipe_nodes)
 
         edges = [edge for edge in self.edges]
+        # print(edges)
         pipe_nodes_mod = []
         for nodepair in pipe_nodes:
             if nodepair in edges:
@@ -210,7 +215,7 @@ class alternateNetworkGeo(DiGraph):
     def get_initial_pipe_spaths(self):
         return self.initial_pipe_spaths
     
-    def enforce_pipeline_tie_point(self, pathname, point1=None, point2=None, exclusion=False, etype='before'):
+    def enforce_pipeline_tie_point(self, pathname, point1=None, point2=None, exclusion=False, etype='before', onlyin=False, onlyout=False):
         #convert x,y to points on the graph
         if point1:
             point1 = self.gt._xyToCell(point1[0], point1[1])
@@ -230,6 +235,14 @@ class alternateNetworkGeo(DiGraph):
                 if (edge[0] in self.existingPathVertices[pathname]) and (edge[1] not in self.existingPathVertices[pathname]) \
                     and (edge[0] != point1) and (edge[0] != point2):
                     self.edges[edge]['weight'] = 1e9
+
+                if onlyin:
+                    if ((edge[0] == point1) or (edge[0] == point2)) and (edge[1] not in self.existingPathVertices[pathname]):
+                        self.edges[edge]['weight'] = 1e9
+
+                if onlyout:
+                    if ((edge[1] == point1) or (edge[1] == point2)) and (edge[0] not in self.existingPathVertices[pathname]):
+                        self.edges[edge]['weight'] = 1e9
                 
             
         #case 2: 2 tie in points with exclusion at ends
@@ -251,6 +264,14 @@ class alternateNetworkGeo(DiGraph):
                 if (edge[0] in exclusion_list) and (edge[1] not in pathvertices) \
                     and (edge[0] != point1) and (edge[0] != point2):
                     self.edges[edge]['weight'] = 1e9
+
+                if onlyin:
+                    if (edge[0] in not_excluded) and (edge[1] not in self.existingPathVertices[pathname]):
+                        self.edges[edge]['weight'] = 1e9
+
+                if onlyout:
+                    if (edge[1] in not_excluded) and (edge[0] not in self.existingPathVertices[pathname]):
+                        self.edges[edge]['weight'] = 1e9
                     
         
         else:
@@ -274,6 +295,17 @@ class alternateNetworkGeo(DiGraph):
                     if (edge[0] in exclusion_list) and (edge[1] not in pathvertices) \
                         and (edge[0] != point):
                         self.edges[edge]['weight'] = 1e9
+
+                    #enforce onlyin
+                    if onlyin:
+                        if (edge[0] == point) and (edge[1] not in pathvertices):
+                            self.edges[edge]['weight'] = 1e9
+
+                    #enforce onlyin
+                    if onlyout:
+                        if (edge[1] == point) and (edge[0] not in pathvertices):
+                            self.edges[edge]['weight'] = 1e9
+
                 
             
             #case 4 single point with before or after exclusion on one end
@@ -286,6 +318,9 @@ class alternateNetworkGeo(DiGraph):
                     exclusion_list = pathvertices[:pathvertices.index(point)]
                 else:
                     exclusion_list = pathvertices[pathvertices.index(point)+1:]
+
+                end1 = pathvertices[0]
+                end2 = pathvertices[-1]
                     
                 for edge in self.edges:
                     #in
@@ -297,6 +332,17 @@ class alternateNetworkGeo(DiGraph):
                     if (edge[0] in exclusion_list) and (edge[1] not in pathvertices) \
                         and (edge[0] != point):
                         self.edges[edge]['weight'] = 1e9
+
+                    
+                    if onlyin:
+                        if (edge[0] in pathvertices) and (edge[0] not in exclusion_list) \
+                            and (edge[0] != end2) and (edge[0] != end1) and (edge[1] not in pathvertices):
+                            self.edges[edge]['weight'] = 1e9
+                    
+                    if onlyout:
+                        if (edge[1] in pathvertices) and (edge[1] not in exclusion_list) \
+                            and (edge[1] != end2) and (edge[1] != end1) and (edge[0] not in pathvertices):
+                            self.edges[edge]['weight'] = 1e9
                 
 
     
@@ -866,6 +912,20 @@ class alternateNetworkGeo(DiGraph):
 
         self.unique_pipes = self.pipelines_df["Name"].unique()
 
+
+        existing_path_df = {"Name": [],
+                        "Lat": [],
+                        "Lon": []}
+        
+        for key in self.existingPathVertices.keys():
+            for pt in self.existingPathVertices[key]:
+                lat, lon = self.gt._cellToLatLon(pt)
+                existing_path_df["Name"].append(key)
+                existing_path_df["Lat"].append(lat)
+                existing_path_df["Lon"].append(lon)
+
+        self.existing_path_df = pd.DataFrame(existing_path_df)
+        
         self.lines = self.D.getDelaunayNetwork()
 
 
@@ -885,7 +945,6 @@ class alternateNetworkGeo(DiGraph):
                 lon = [lon1, lon2],
                 showlegend=False,
                 line={'color':'black'}
-                
             ))
 
         return fig1
@@ -901,9 +960,22 @@ class alternateNetworkGeo(DiGraph):
                 lat = self.pipelines_df[self.pipelines_df.Name == pipe]["Lat"],
                 lon = self.pipelines_df[self.pipelines_df.Name == pipe]["Lon"],
                 showlegend=False,
-                line={'color':'blue'}
-                
+                line={'color':'blue'},
+                name = str(pipe)
             ))  
+
+        #addpipeline plot
+        for path in self.existingPath.keys():
+            fig2.add_trace(go.Scattermapbox(
+                mode = "lines",
+                lat = self.existing_path_df[self.existing_path_df.Name == path]["Lat"],
+                lon = self.existing_path_df[self.existing_path_df.Name == path]["Lon"],
+                showlegend=True,
+                opacity=0.5,
+                line={'width': 5, 'color':'purple'},
+                name = str(path)
+            ))
+
 
         return fig2
     
@@ -917,12 +989,24 @@ class alternateNetworkGeo(DiGraph):
                 mode = "lines",
                 lat = self.pipelines_df[self.pipelines_df.Name == pipe]["Lat"],
                 lon = self.pipelines_df[self.pipelines_df.Name == pipe]["Lon"],
-                showlegend=False
-            
-                
+                showlegend=False,
+                line={'color':'blue'},
+                name = str(pipe)
             ))
 
+        #addpipeline plot
+        for path in self.existingPath.keys():
+            fig3.add_trace(go.Scattermapbox(
+                mode = "lines",
+                lat = self.existing_path_df[self.existing_path_df.Name == path]["Lat"],
+                lon = self.existing_path_df[self.existing_path_df.Name == path]["Lon"],
+                showlegend=True,
+                opacity=0.5,
+                line={'width': 5, 'color':'purple'},
+                name = str(path)
+            ))
 
+        #highlight soln
         for pipe in self.unique_pipes:
             if ((self.nodesdict[pipe[0]], self.nodesdict[pipe[1]]) in soln_arcs.keys()) or \
                 ((self.nodesdict[pipe[1]], self.nodesdict[pipe[0]]) in soln_arcs.keys()) : 
@@ -951,11 +1035,14 @@ class alternateNetworkGeo(DiGraph):
         for solnkey in solnkeys:
             path = self.spaths[(solnkey[0], solnkey[1])]
             path_geo = []
+            length_act = 0
             for i in range(len(path)-1):
                 lat1, lon1 = self.gt._cellToLatLon(path[i])
                 lat2, lon2 = self.gt._cellToLatLon(path[i+1])
                 path_geo.append(((lat1, lon1), (lat2, lon2)))
-            length = self.spathsLength[(solnkey[0], solnkey[1])]
+                length_act += self.gt._getDistance(path[i], path[i+1])
+            length1 = self.spathsLength[(solnkey[0], solnkey[1])]
+            length = length_act
             if solnkey[2] == 'n':
                 resultdict2[(self.nodesdict[solnkey[0]], self.nodesdict[solnkey[1]])] = {"length": length, "path": path_geo}
             else:
@@ -997,16 +1084,48 @@ class alternateNetworkGeo(DiGraph):
         for key, value in self.spathsCost.items():
             node1 = self.nodesdict[key[0]]
             node2 = self.nodesdict[key[1]]
-            arcsCost[(node1, node2)] = value
-            arcsCost[(node2, node1)] = value
-            arcsLength[(node1, node2)] = self.spathsLength[key]
-            arcsLength[(node2, node1)] = self.spathsLength[key]
-            arcsWeight[(node1, node2)] = self.spathsWeight[key]
-            arcsWeight[(node2, node1)] = self.spathsWeight[key]
-            arcsPath[(node1, node2)] = self.spaths[key]
-            arcsPath[(node2, node1)] = [i for i in reversed(self.spaths[key])]
-            arcs.append((node1, node2))
-            arcs.append((node2, node1))
+            arc_1 = node1.split("_")[0]
+            arc_2 = node2.split("_")[0]
+            if (arc_1 == arc_2) and (arc_1 in self.existingPathBounds.keys()):
+                if (self.existingPathType[arc_1] == "unidirectional"):
+                    arcsCost[(node1, node2)] = value
+                    arcsLength[(node1, node2)] = self.spathsLength[key]
+                    arcsWeight[(node1, node2)] = self.spathsWeight[key]
+                    arcsPath[(node1, node2)] = self.spaths[key]
+                    arcs.append((node1, node2))
+                else:
+                    arcsCost[(node1, node2)] = value
+                    arcsCost[(node2, node1)] = value
+                    arcsLength[(node1, node2)] = self.spathsLength[key]
+                    arcsLength[(node2, node1)] = self.spathsLength[key]
+                    arcsWeight[(node1, node2)] = self.spathsWeight[key]
+                    arcsWeight[(node2, node1)] = self.spathsWeight[key]
+                    arcsPath[(node1, node2)] = self.spaths[key]
+                    arcsPath[(node2, node1)] = [i for i in reversed(self.spaths[key])]
+                    arcs.append((node1, node2))
+                    arcs.append((node2, node1))
+            else:
+                arcsCost[(node1, node2)] = value
+                arcsCost[(node2, node1)] = value
+                arcsLength[(node1, node2)] = self.spathsLength[key]
+                arcsLength[(node2, node1)] = self.spathsLength[key]
+                arcsWeight[(node1, node2)] = self.spathsWeight[key]
+                arcsWeight[(node2, node1)] = self.spathsWeight[key]
+                arcsPath[(node1, node2)] = self.spaths[key]
+                arcsPath[(node2, node1)] = [i for i in reversed(self.spaths[key])]
+                arcs.append((node1, node2))
+                arcs.append((node2, node1))
+
+            # arcsCost[(node1, node2)] = value
+            # arcsCost[(node2, node1)] = value
+            # arcsLength[(node1, node2)] = self.spathsLength[key]
+            # arcsLength[(node2, node1)] = self.spathsLength[key]
+            # arcsWeight[(node1, node2)] = self.spathsWeight[key]
+            # arcsWeight[(node2, node1)] = self.spathsWeight[key]
+            # arcsPath[(node1, node2)] = self.spaths[key]
+            # arcsPath[(node2, node1)] = [i for i in reversed(self.spaths[key])]
+            # arcs.append((node1, node2))
+            # arcs.append((node2, node1))
         
         #get b values for network graph
         nodes_b ={key:0 for key in nodenames}

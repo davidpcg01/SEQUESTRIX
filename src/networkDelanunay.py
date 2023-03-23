@@ -149,11 +149,12 @@ class networkDelanunay:
     
 if __name__ == '__main__':
     points = np.array([[10,18],[20,75],[50,50],[80,35], [80,90]])
-    D = networkDelanunay(width=683, height=333)
+    D = networkDelanunay(width=6983, height=2983)
     D.add_points_from_list(points)
-   
-    
     D.createDelaunayNetwork()
+    max_point = ((D.height+1)*(D.width+1))
+    print(max_point)
+    print(D.get_xy_from_point(max_point))
     print(D.getDelaunayNetwork())
     # print(D.getDelaunayNetwork_geo())
     D.plotNetwork()

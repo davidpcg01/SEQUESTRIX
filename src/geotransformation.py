@@ -8,6 +8,7 @@ from bisect import bisect_left, bisect_right
 from pathlib import Path
 
 ROOT_PATH = Path(__file__).parent.parent.resolve()
+# FILE_PATH = ROOT_PATH.joinpath("Construction Costs.csv")
 FILE_PATH = ROOT_PATH.joinpath("construction-costs-subset.csv")
 
 
@@ -37,50 +38,12 @@ class geoTransformation:
             self.cellSize = float(next(csv_reader)[1])
             self.noDataValue = next(csv_reader)[1]
 
-            if round(self.cellSize, 5) == 0.00833:
-                print("Transforming cellSize")
-                self.cellSize = 1
-                self.gridTranslated = True
-                self.getGridTranslation()
-                print("Transformed cellSize and generated grid translation")
-            # loop throw remaining cols and add the weights as costs
-
         self.gridVertices = [i for i in range(1, ((self.gridWidth*self.gridHeight) + 1))]
 
                 
     
     def _loadcost(self):
-        # self._initializeCostgrid()
-        with open(self.costFilePath, 'r') as read_obj:
-            csv_reader = reader(read_obj)
-            i = 0
-            while i < 8:
-                next(csv_reader)
-                i += 1
-            edgeConn = next(csv_reader)
-            while edgeConn != ['']:
-                edgeCost = next(csv_reader)
-                startnode = int(edgeConn[0])
-                for i in range(len(edgeCost)):
-                    # if (startnode, int(edgeConn[i+1])) not in self.gridcost:
-                        # print(startnode, int(edgeConn[i+1]))
-                    key = (startnode, int(edgeConn[i+1]))
-                    if self._checkBound(key):
-                        self.gridcost[key] =  float(edgeCost[i])
-                edgeConn = read_obj.readline().split(",")
-                edgeConn[-1] = edgeConn[-1].split("\n")[0]
-
-        # self._generateGridCostList()
-
-
-        #create list of list to store costs
-        #NOTE: each list i represents a cell
         
-        # print(self.gridcost)
-        # print(self.gridCostList)
-
-    def _loadcostT(self):
-        # self._initializeCostgrid()
         with open(self.costFilePath, 'r') as read_obj:
             csv_reader = reader(read_obj)
             i = 0
@@ -92,9 +55,7 @@ class geoTransformation:
                 edgeCost = next(csv_reader)
                 startnode = int(edgeConn[0])
                 for i in range(len(edgeCost)):
-                    # if (startnode, int(edgeConn[i+1])) not in self.gridcost:
-                        # print(startnode, int(edgeConn[i+1]))
-                    key = (self.gridtranslation[startnode], self.gridtranslation[int(edgeConn[i+1])])
+                    key = (startnode, int(edgeConn[i+1]))
                     if self._checkBound(key):
                         self.gridcost[key] =  float(edgeCost[i])
                 edgeConn = read_obj.readline().split(",")
@@ -127,19 +88,6 @@ class geoTransformation:
             row_list.reverse()
             grid.append(row_list)
         return grid
-    
-    def getGridTranslation(self):
-        nrows = self.gridHeight
-        ncols = self.gridWidth
-        lrdu = self.create_grid()
-        lrud = self.translate_grid()
-
-        result_dict = {}
-        for i in range(nrows):
-            for j in range(ncols):
-                result_dict[lrdu[i][j]] =  lrud[i][j]
-        
-        self.gridtranslation = result_dict
     
 
     def _generateGridCostList(self):
@@ -179,50 +127,42 @@ class geoTransformation:
         return Point(latitude=lat_a, longitude=lon_b)
 
     def _latlonToCell(self, lat, lon):
-        # y = self.gridHeight - int((lat - self.lowerLeftY) / self.cellSize + 1) + 1
-        # x = int((lon - self.lowerLeftX) / self.cellSize) + 1
-        point_a = Point(self.lowerLeftY, self.lowerLeftX)
-        point_b = Point(lat, self.lowerLeftX)
-        point_c = Point(lat, lon)
-        d1 = distance(point_a, point_b).meters
-        y  = round(d1 / (self.cellSize*1000)) + 1
-        d2 = distance(point_b, point_c).meters
-        x = round(d2 / (self.cellSize*1000)) + 1
+        y = self.gridHeight - (int((lat - self.lowerLeftY) / self.cellSize) + 1) + 1
+        x = int((lon - self.lowerLeftX) / self.cellSize) + 1
         return self._xyToCell(x, y)
     
     def _xyToCell(self, x, y):
         return (y -1) * self.gridWidth + x
     
     def _cellToXY(self, cell):
+        cell = cell
         y = int((cell - 1) / self.gridWidth + 1)
         x = int(cell - (y - 1) * self.gridWidth)
         return [x,y]
 
     def _cellToLatLon(self, cell):
+        cell = cell
         xy = self._cellToXY(cell)
-        xy[0] -= 1
-        xy[1] -= 1
-        d1 =  (self.cellSize * 1000 * xy[1]) -.5
-        d2 = (self.cellSize * 1000 * xy[0])  -.5
-        point_a = Point(self.lowerLeftY, self.lowerLeftX)
-        point_b = distance(kilometers=d1/1000).destination(point_a, bearing=0)
-        point_c = self._vicenty(distance_km=d2/1000, point_a=point_b)
-        lat = point_c[0]
-        lon = point_c[1]
+        xy[0] -= .5
+        xy[1] -= .5
+        lat = (self.gridHeight - xy[1]) * self.cellSize + self.lowerLeftY
+        lon = xy[0] * self.cellSize + self.lowerLeftX
         return lat, lon
         
     
     def _latlonToXY(self, lat, lon):
-        # y = self.gridHeight - int((lat - self.lowerLeftY) / self.cellSize + 1) + 1
-        # x = int((lon - self.lowerLeftX) / self.cellSize) + 1
-        point_a = Point(self.lowerLeftY, self.lowerLeftX)
-        point_b = Point(lat, self.lowerLeftX)
-        point_c = Point(lat, lon)
-        d1 = distance(point_a, point_b).meters
-        y  = round(d1 / (self.cellSize*1000)) + 1
-        d2 = distance(point_b, point_c).meters
-        x = round(d2 / (self.cellSize*1000)) + 1
+        y = self.gridHeight - (int((lat - self.lowerLeftY) / self.cellSize) + 1) + 1
+        x = int((lon - self.lowerLeftX) / self.cellSize) + 1
         return [x,y]
+    
+    def _getDistance(self, cell1, cell2):
+        lat1, lon1 = self._cellToLatLon(cell1)
+        lat2, lon2 = self._cellToLatLon(cell2)
+        point1 = Point(lat1, lon1)
+        point2 = Point(lat2, lon2)
+        dist = distance(point1, point2).kilometers
+        return dist
+
     
     def _xyToLatLon(self, x, y):
         cell = self._xyToCell(x, y)
@@ -248,18 +188,10 @@ class geoTransformation:
         print("Subsetting cost grid completed. Time Elapsed: %s seconds" %(time.time() - start_time))
         print("")
         print("Loading cost...")
-        if self.gridTranslated == True:
-            self._loadcostT()
-        else:
-            self._loadcost()
+        self._loadcost()
         print("loaded cost. Time Elapsed: %s seconds" %(time.time() - start_time))
         print("")
         
-        
-        # print("Converting cost to graph edges...")
-        # self._generateGridCostList()
-        # print("Conversion complete. Time Elapsed: %s seconds" %(time.time() - start_time))
-        # print("")
     
 
     def _subsetGrid(self):
@@ -274,26 +206,26 @@ class geoTransformation:
         inputdata = [sw, se, nw, ne]
 
 
-
         newWidth = max((inputdata[1] - inputdata[0]), (inputdata[3] - inputdata[2]))+1
-        newHeight = max((inputdata[2] - inputdata[0]), (inputdata[3] - inputdata[1]))+ncols
-
+        newHeight = max(abs(inputdata[2] - inputdata[0]), abs(inputdata[3] - inputdata[1]))+ncols
+        
+        
         start = inputdata[0]
 
         n_nrows = round(newHeight/ncols)
+
         
 
         self.leftbounds = []
         self.rightbounds = []
         for i in range(n_nrows):
-            start_x = start + (i*ncols)
+            start_x = start - (i*ncols)
             self.leftbounds.append(start_x)
             self.rightbounds.append(start_x + newWidth - 1)
 
-        # self.gridsubsetcost = {}
-        # for key in self.gridcost.keys():
-        #     if self._checkBound(key):
-        #         self.gridsubsetcost[key] = self.gridcost[key]
+        self.leftbounds.reverse()
+        self.rightbounds.reverse()
+
 
     
     def _checkBound(self, data):
@@ -310,15 +242,14 @@ class geoTransformation:
     def getHeight(self):
         return self.gridHeight
     
-
     def getWidth(self):
         return self.gridWidth
     
     def getCellSize(self):
         return self.cellSize
     
-    def getSubsetEdges(self):
-        return self.gridsubsetcost
+    
+    
     
 
 
@@ -335,13 +266,17 @@ if __name__ == "__main__":
     print(gt._latlonToXY(35.805645, -97.162054)) #sw
     print(gt._latlonToXY(37.306068, -93.379661)) #ne
     print(gt._latlonToXY(35.805645, -93.379661)) #se
-    print(gt._xyToLatLon(251, 263))
+    # print(gt._xyToLatLon(251, 263))
     # print(gt._cellToXY(205199))
     # print(gt._xyToCell(251,263))
-    print(gt._xyToCell(2439,1418))
-    print(gt._xyToCell(2487,1252))
-    print(gt._xyToCell(2770,1418))
-    print(gt._xyToCell(2825,1252))
+    # print(gt._xyToCell(2439,1418))
+    # print(gt._xyToCell(2487,1252))
+    # print(gt._xyToCell(2770,1418))
+    # print(gt._xyToCell(2825,1252))
+    print(gt._xyToCell(3313,1450))
+    print(gt._xyToCell(3313,1630))
+    print(gt._xyToCell(3767,1450))
+    print(gt._xyToCell(3767,1630))
     # print(cell)
     # print(gt._cellToLatLon(cell))
     # print(gt.getEdgesList())
