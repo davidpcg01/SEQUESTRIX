@@ -35,7 +35,7 @@ for key in keys_to_track:
 
 
 def writeSoln(dur: int, target: float, crf: float, soln_arcs : Dict, soln_sources: Dict, soln_sinks: Dict, 
-              soln_cap_costs: Dict, soln_storage_costs: Dict, soln_transport_costs: Dict, pipeResult, filename=OUTPUT_FILE_PATH):
+              soln_cap_costs: Dict, soln_storage_costs: Dict, soln_transport_costs: Dict, pipeResult, data, filename=OUTPUT_FILE_PATH):
     total_captured = sum(soln_sources.values())
     total_stored = sum(soln_sinks.values())
     total_capture_cost = sum(soln_cap_costs.values())
@@ -56,14 +56,14 @@ def writeSoln(dur: int, target: float, crf: float, soln_arcs : Dict, soln_source
         writer.writerow(["Storage Cost ($M/yr)", total_storage_cost/dur])
         writer.writerow([""])
         writer.writerow(["CO2 CAPTURE SOURCES SOLUTION BREAKDOWN"])
-        writer.writerow(["CO2 Source", "Capture Amount (MTCO2/yr)", "Capture Cost ($M/yr)"])
+        writer.writerow(["CO2 Source ID", "CO2 Source Name", "Capture Amount (MTCO2/yr)", "Capture Cost ($M/yr)"])
         for src in soln_sources.keys():
-            writer.writerow([src, soln_sources[src], soln_cap_costs[src]/dur])
+            writer.writerow([src, data.get_Name_From_ID(src), soln_sources[src], soln_cap_costs[src]/dur])
         writer.writerow([""])
         writer.writerow(["CO2 STORAGE SINKS SOLUTION BREAKDOWN"])
-        writer.writerow(["CO2 Sink", "Storage Amount (MTCO2/yr)", "Storage Cost ($M/yr)"])
+        writer.writerow(["CO2 Sink ID", "CO2 Sink Name", "Storage Amount (MTCO2/yr)", "Storage Cost ($M/yr)"])
         for sink in soln_sinks.keys():
-            writer.writerow([sink, soln_sinks[sink]/dur, soln_storage_costs[sink]/dur])
+            writer.writerow([sink, data.get_Name_From_ID(sink), soln_sinks[sink]/dur, soln_storage_costs[sink]/dur])
         writer.writerow([""])
         writer.writerow(["CO2 TRANSPORT PIPELINES SOLUTION BREAKDOWN"])
         writer.writerow(["Start Point", "End Point", "Length (km)", "CO2 Transported (MTCO2/yr)", "Transport Cost ($M/yr)"])
@@ -200,7 +200,7 @@ def solveModel(pipe_path, input_path, dur, tar, crf=0.01):
 
 
             writeSoln(duration, target_cap, crf_input, soln_arcs, soln_sources, soln_sinks, soln_cap_costs,
-                    soln_storage_costs, soln_transport_costs, pipe_result)
+                    soln_storage_costs, soln_transport_costs, pipe_result, data=data)
 
 
             #extract final plot and update progress bar

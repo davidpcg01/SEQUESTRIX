@@ -542,27 +542,6 @@ class alternateNetworkGeo(DiGraph):
                 yp.append(xy[1])
             plt.plot(xp, yp, 'red', lw=6, alpha=0.5)
         
-        #plot the gridcelll
-        # xss = []
-        # yss = []
-        # for pt in list(ptslist):
-        #     xys = self.gt._cellToXY(pt)
-        #     xss.append(xys[0])
-        #     yss.append(xys[1])
-
-        # plt.plot(xss, yss, 'o', color='green', mew=0.000000001, alpha=0.1)
-
-
-        # xss = []
-        # yss = []
-        # for edge in list(ptslist):
-        #     for pt in edge:
-        #         xys = self.gt._cellToXY(pt)
-        #         xss.append(xys[0])
-        #         yss.append(xys[1])
-
-        # plt.plot(xss, yss, 'o', color='green', mew=0.000000001, alpha=0.1)
-        
         
         #plot asset markers
         for key in self.assetsXY.keys():
@@ -1116,16 +1095,6 @@ class alternateNetworkGeo(DiGraph):
                 arcs.append((node1, node2))
                 arcs.append((node2, node1))
 
-            # arcsCost[(node1, node2)] = value
-            # arcsCost[(node2, node1)] = value
-            # arcsLength[(node1, node2)] = self.spathsLength[key]
-            # arcsLength[(node2, node1)] = self.spathsLength[key]
-            # arcsWeight[(node1, node2)] = self.spathsWeight[key]
-            # arcsWeight[(node2, node1)] = self.spathsWeight[key]
-            # arcsPath[(node1, node2)] = self.spaths[key]
-            # arcsPath[(node2, node1)] = [i for i in reversed(self.spaths[key])]
-            # arcs.append((node1, node2))
-            # arcs.append((node2, node1))
         
         #get b values for network graph
         nodes_b ={key:0 for key in nodenames}
@@ -1162,27 +1131,15 @@ if __name__ == '__main__':
 
     #Build graph  
     g = alternateNetworkGeo()
-    # gt = geoTransformation()
-    # gt._loadgeogrid()
-    # gt._loadcost()
-    # g.initialize_dummy_cost_surface()
     g.initialize_cost_surface()
 
-    # g.print_edges()
-    
-
-    
-    
+   
 #     #Import existing pipeline
-#     g.import_pipeline(input_dir=r'C:\Users\david\CO2 TRANSPORT NETWORK MODEL\Existing Pipeline.xlsx', pathname='pipeline1')
     g.import_pipeline_lat_long(input_dir=r"C:\Users\david\CO2 TRANSPORT NETWORK MODEL\coffeyville pipeline.xlsx")
     
     # #confirm pipeline has been imported
     # print(g.get_existing_zero_cost_path())
     # print(g.get_existing_zero_cost_path_vertices())
-    
-   
-#     #g.print_edges()
     
     
     #Enter source and sink locations:

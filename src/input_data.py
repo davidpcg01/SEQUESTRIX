@@ -99,6 +99,13 @@ class InputData:
     
     def get_ID_Names(self):
         return self.sourceID_Name, self.sinkID_Name
+    
+
+    def get_Name_From_ID(self, id):
+        if "source" in id:
+            return self.sourceID_Name[id]
+        elif "sink" in id:
+            return self.sinkID_Name[id]
 
 
 

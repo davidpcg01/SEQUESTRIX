@@ -84,7 +84,6 @@ class Math_model:
         self.arc_length: Dict = {} #length of arc/or pipeline in KM
         self.arc_weight: Dict = {} #weight of constructing arc. This corresponds to the terrain
         self.arc_cost: Dict = {} #weighted cost of constructing arc (this is the build cost)
-        #TODO: calculate transport cost per tCO2 for each arc depending on size
         
 
     def _initialize_pipeline_parameters(self) -> None:
@@ -419,7 +418,7 @@ class Math_model:
         self.model.write(LP_FILE_PATH)
         self.model.write(MPS_FILE_PATH)
         
-        if (self.model.NumVars <= 2000) and (self.model.NumConstrs <= 2000):
+        if (self.model.NumVars <= 10) and (self.model.NumConstrs <= 10):
             #solve model
             self.model.optimize()
             LOGGER.info(f'Model Status: {self.model.status}')
@@ -443,7 +442,7 @@ class Math_model:
             LOGGER.info("Model is too large for Gurobipy free licence, switching to CPLEX")
             self.use_pulp=True
             self.pulp_var, self.pulp_model = LpProblem.fromMPS(MPS_FILE_PATH)
-            self.pulp_solver = pl.CPLEX_CMD(msg=False)
+            self.pulp_solver = pl.CPLEX_CMD(options=['mipdisplay=0'])
             self.pulp_model.solve(self.pulp_solver)
             if self.pulp_model.status == 1:
                 #write soln

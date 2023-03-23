@@ -16,8 +16,8 @@ if "solved" not in st.session_state:
 OUTPUT_FILE_PATH = os.path.join("Sequestrix/app/output_files/solution_file.csv")
 
 def read_result(filename=OUTPUT_FILE_PATH):
-    df_capture = {"CO2 Source": [], "Capture Amount (MTCO2/yr)": [], "Capture Cost ($M/yr)": []}
-    df_storage = {"CO2 Sink":[], "Storage Amount (MTCO2/yr)":[], "Storage Cost ($M/yr)":[]}
+    df_capture = {"CO2 Source ID": [], "CO2 Source Name": [], "Capture Amount (MTCO2/yr)": [], "Capture Cost ($M/yr)": []}
+    df_storage = {"CO2 Sink ID":[], "CO2 Sink Name":[], "Storage Amount (MTCO2/yr)":[], "Storage Cost ($M/yr)":[]}
     df_transport = {"Start Point":[], "End Point":[], "Length (km)":[], "CO2 Transported (MTCO2/yr)":[], "Transport Cost ($M/yr)":[]}
     global dur
     global target
@@ -31,25 +31,27 @@ def read_result(filename=OUTPUT_FILE_PATH):
         total_cap = float(next(csv_reader)[1])
 
         curr = next(csv_reader)
-        while curr[0] != "CO2 Source":
+        while curr[0] != "CO2 Source ID":
             curr = next(csv_reader)
         
         curr = next(csv_reader)
         while curr[0] != "":
-            df_capture["CO2 Source"].append(curr[0])
-            df_capture["Capture Amount (MTCO2/yr)"].append(float(curr[1]))
-            df_capture["Capture Cost ($M/yr)"].append(float(curr[2]))
+            df_capture["CO2 Source ID"].append(curr[0])
+            df_capture["CO2 Source Name"].append(curr[1])
+            df_capture["Capture Amount (MTCO2/yr)"].append(float(curr[2]))
+            df_capture["Capture Cost ($M/yr)"].append(float(curr[3]))
             curr = next(csv_reader)
         
 
-        while curr[0] != "CO2 Sink":
+        while curr[0] != "CO2 Sink ID":
             curr = next(csv_reader)
         
         curr = next(csv_reader)
         while curr[0] != "":
-            df_storage["CO2 Sink"].append(curr[0])
-            df_storage["Storage Amount (MTCO2/yr)"].append(float(curr[1]))
-            df_storage["Storage Cost ($M/yr)"].append(float(curr[2]))
+            df_storage["CO2 Sink ID"].append(curr[0])
+            df_storage["CO2 Sink Name"].append(curr[1])
+            df_storage["Storage Amount (MTCO2/yr)"].append(float(curr[2]))
+            df_storage["Storage Cost ($M/yr)"].append(float(curr[3]))
             curr = next(csv_reader)
         
         
@@ -131,9 +133,6 @@ if st.session_state.solved:
             ColourWidgetText(str(round(unit_total_cost, 2)), 'red')
 
 
-        
-
-
         ColourWidgetText(str(round(total_cap * dur, 1)), 'yellow')
         ColourWidgetText("Project Duration", 'orange')
         ColourWidgetText("Number of Sources", 'red')
@@ -165,19 +164,21 @@ if st.session_state.solved:
 
         with fig_col2:
             st.markdown("#### Annual Capture Volume (MTCO2/yr)")
-            fig2 = px.bar(df_capture.sort_values(by="Capture Amount (MTCO2/yr)", ascending=True), x="CO2 Source", y="Capture Amount (MTCO2/yr)", color_discrete_sequence=px.colors.sequential.RdBu)
+            fig2 = px.bar(df_capture.sort_values(by="Capture Amount (MTCO2/yr)", ascending=True), x="CO2 Source ID", y="Capture Amount (MTCO2/yr)", hover_name="CO2 Source Name", 
+                          color_discrete_sequence=px.colors.sequential.RdBu)
             st.plotly_chart(fig2, use_container_width=True)
         
         fig_col3, fig_col4 = st.columns(2)
         with fig_col3:
             st.markdown("#### Annual Capture Cost ($M/yr)")
-            fig3 = px.bar(df_capture.sort_values(by="Capture Cost ($M/yr)", ascending=True), x="Capture Cost ($M/yr)", y="CO2 Source", color_discrete_sequence=px.colors.sequential.RdBu, orientation='h')
+            fig3 = px.bar(df_capture.sort_values(by="Capture Cost ($M/yr)", ascending=True), x="Capture Cost ($M/yr)", y="CO2 Source ID", hover_name="CO2 Source Name",
+                           color_discrete_sequence=px.colors.sequential.RdBu, orientation='h')
             st.plotly_chart(fig3, use_container_width=True)
             
 
         with fig_col4:
             st.markdown(f"#### Total Capture Volume over {dur} yrs: {total_cap} MTCO2")
-            fig4 = px.pie(df_capture, values="Total CO2 Captured (MTCO2)", names="CO2 Source", color_discrete_sequence=px.colors.sequential.RdBu)
+            fig4 = px.pie(df_capture, values="Total CO2 Captured (MTCO2)", names="CO2 Source ID", hover_name="CO2 Source Name", color_discrete_sequence=px.colors.sequential.RdBu)
             st.plotly_chart(fig4, use_container_width=True)
 
         with st.expander("See CO2 Capture Results Table"):
@@ -188,19 +189,21 @@ if st.session_state.solved:
         fig_col5, fig_col6 = st.columns(2)
         with fig_col5:
             st.markdown(f"#### Total Storage Volume over {dur} yrs: {round(df_storage['Total CO2 Stored (MTCO2)'].sum(), 2)} MTCO2")
-            fig5 = px.pie(df_storage, values="Total CO2 Stored (MTCO2)", names="CO2 Sink", color_discrete_sequence=px.colors.sequential.Emrld)
+            fig5 = px.pie(df_storage, values="Total CO2 Stored (MTCO2)", names="CO2 Sink ID", hover_name="CO2 Sink Name", color_discrete_sequence=px.colors.sequential.Emrld)
             st.plotly_chart(fig5, use_container_width=True)
             
 
         with fig_col6:
             st.markdown("#### Annual Storage Volume (MTCO2/yr)")
-            fig6 = px.bar(df_storage.sort_values(by="Storage Amount (MTCO2/yr)", ascending=True), x="CO2 Sink", y="Storage Amount (MTCO2/yr)", color_discrete_sequence=px.colors.sequential.Emrld)
+            fig6 = px.bar(df_storage.sort_values(by="Storage Amount (MTCO2/yr)", ascending=True), x="CO2 Sink ID", y="Storage Amount (MTCO2/yr)", hover_name="CO2 Sink Name", 
+                          color_discrete_sequence=px.colors.sequential.Emrld)
             st.plotly_chart(fig6, use_container_width=True)
         
         fig_col7, fig_col8 = st.columns(2)
         with fig_col7:
             st.markdown("#### Annual Storage Cost ($M/yr)")
-            fig7 = px.bar(df_storage.sort_values(by="Storage Cost ($M/yr)", ascending=True), x="Storage Cost ($M/yr)", y="CO2 Sink", color_discrete_sequence=px.colors.sequential.Emrld, orientation='h')
+            fig7 = px.bar(df_storage.sort_values(by="Storage Cost ($M/yr)", ascending=True), x="Storage Cost ($M/yr)", y="CO2 Sink ID", hover_name="CO2 Sink Name", 
+                          color_discrete_sequence=px.colors.sequential.Emrld, orientation='h')
             st.plotly_chart(fig7, use_container_width=True)        
 
         with st.expander("See CO2 Storage Results Table"):
