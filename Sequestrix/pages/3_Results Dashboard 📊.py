@@ -18,7 +18,7 @@ OUTPUT_FILE_PATH = os.path.join("Sequestrix/app/output_files/solution_file.csv")
 def read_result(filename=OUTPUT_FILE_PATH):
     df_capture = {"CO2 Source ID": [], "CO2 Source Name": [], "Capture Amount (MTCO2/yr)": [], "Capture Cost ($M/yr)": []}
     df_storage = {"CO2 Sink ID":[], "CO2 Sink Name":[], "Storage Amount (MTCO2/yr)":[], "Storage Cost ($M/yr)":[]}
-    df_transport = {"Start Point":[], "End Point":[], "Length (km)":[], "CO2 Transported (MTCO2/yr)":[], "Transport Cost ($M/yr)":[]}
+    df_transport = {"Start Point":[], "End Point":[], "Length (km)":[], "Weight":[], "CO2 Transported (MTCO2/yr)":[], "Transport Cost ($M/yr)":[]}
     global dur
     global target
     global total_cap 
@@ -65,8 +65,9 @@ def read_result(filename=OUTPUT_FILE_PATH):
             df_transport["Start Point"].append(curr[0])
             df_transport["End Point"].append(curr[1])
             df_transport["Length (km)"].append(float(curr[2]))
-            df_transport["CO2 Transported (MTCO2/yr)"].append(float(curr[3]))
-            df_transport["Transport Cost ($M/yr)"].append(float(curr[4]))
+            df_transport["Weight"].append(float(curr[3]))
+            df_transport["CO2 Transported (MTCO2/yr)"].append(float(curr[4]))
+            df_transport["Transport Cost ($M/yr)"].append(float(curr[5]))
             curr = next(csv_reader)
         
     

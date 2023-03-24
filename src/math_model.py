@@ -160,7 +160,7 @@ class Math_model:
         LOGGER.info(f'Target capacity (MTCO2/yr): {self.target_cap}')
         LOGGER.info(f'Total source capacity (MTCO2/yr): {total_source_cap}')
         LOGGER.info(f'Total sink capacity (MTCO2/yr): {total_sink_cap}')
-        LOGGER.info(f'Total source capacity (MTCO2/yr): {total_max_arc_flow}')
+        LOGGER.info(f'Total pipe capacity (MTCO2/yr): {total_max_arc_flow}')
         
         limiting_flow = min(total_source_cap, total_sink_cap, total_max_arc_flow)
 
@@ -545,10 +545,26 @@ class Math_model:
             self.soln_storage_costs[sink] = s_cost
         
         for arc in self.soln_arcs.keys():
-            tf_cost = (self.costTrend["Slope"][arc[2]] * self.vars['arc_flow'][arc].x ) *  self.arc_cost[(arc[0], arc[1])] * self.crf * self.duration
+            print("arc: ", arc)
+            print("slope: ", self.costTrend["Slope"][arc[2]])
+            print("intercept: ", self.costTrend["Intercept"][arc[2]])
+            print("flow: ", self.vars['arc_flow'][arc].x)
+            print("built: ", self.vars['arc_built'][arc].x)
+            print("weight: ", self.arc_cost[(arc[0], arc[1])])
+            print("crf: ", self.crf)
+            print("duration: ", self.duration)
+            
+
+            tf_cost = (self.costTrend["Slope"][arc[2]] * self.vars['arc_flow'][arc].x) *  self.arc_cost[(arc[0], arc[1])] * self.crf * self.duration
             tb_cost = (self.costTrend["Intercept"][arc[2]] * self.vars['arc_built'][arc].x) *  self.arc_cost[(arc[0], arc[1])] * self.crf * self.duration
 
             t_cost = tf_cost + tb_cost
+
+            print("transfer: ", tf_cost)
+            print("build: ", tb_cost)
+            print("total: ", t_cost)
+            print("")
+
             self.soln_transport_costs[arc] = t_cost
 
             self.soln_transport_costs_a = {(arc[0], arc[1]):self.soln_transport_costs[arc] for arc in self.soln_transport_costs.keys()}
@@ -589,10 +605,24 @@ class Math_model:
             self.soln_storage_costs[sink] = s_cost
         
         for arc in self.soln_arcs.keys():
-            tf_cost = (self.costTrend["Slope"][arc[2]] * self.arc_flow_keys[arc] ) *  self.arc_cost[(arc[0], arc[1])] * self.crf * self.duration
+            print("arc: ", arc)
+            print("slope: ", self.costTrend["Slope"][arc[2]])
+            print("intercept: ", self.costTrend["Intercept"][arc[2]])
+            print("flow: ", self.arc_flow_keys[arc])
+            print("built: ", self.arc_built_keys[arc])
+            print("weight: ", self.arc_cost[(arc[0], arc[1])])
+            print("crf: ", self.crf)
+            print("duration: ", self.duration)
+            tf_cost = (self.costTrend["Slope"][arc[2]] * self.arc_flow_keys[arc]) *  self.arc_cost[(arc[0], arc[1])] * self.crf * self.duration
             tb_cost = (self.costTrend["Intercept"][arc[2]] * self.arc_built_keys[arc]) *  self.arc_cost[(arc[0], arc[1])] * self.crf * self.duration
 
             t_cost = tf_cost + tb_cost
+            
+            print("transfer: ", tf_cost)
+            print("build: ", tb_cost)
+            print("total: ", t_cost)
+            print("")
+
             self.soln_transport_costs[arc] = t_cost
 
             self.soln_transport_costs_a = {(arc[0], arc[1]):self.soln_transport_costs[arc] for arc in self.soln_transport_costs.keys()}

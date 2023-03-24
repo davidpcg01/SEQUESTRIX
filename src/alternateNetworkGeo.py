@@ -106,6 +106,7 @@ class alternateNetworkGeo(DiGraph):
 
 
     def import_pipeline_lat_long(self, input_dir, flowtype='bidirectional'):
+        print("Importing Pipeline...")
         pipeline = pd.read_excel(input_dir)
         pipe_nodes = []
         start_nodes = []
@@ -154,10 +155,12 @@ class alternateNetworkGeo(DiGraph):
                 for i in range(len(start_list)):
                     pipe_nodes_mod.append((start_list[i], end_list[i]))
 
-        
+        print("Embedding zero cost path...")
         self.add_existing_zero_cost_path(pathname, pipe_nodes_mod, flowtype)
         self.existingPathType[pathname] = flowtype
         self.existingPathBounds[pathname] = [lower_bound, upper_bound]
+        print("Finished Adding Pipeline.")
+        print("")
 
         
 
@@ -347,6 +350,7 @@ class alternateNetworkGeo(DiGraph):
 
     
     def enforce_no_pipeline_diagonal_Xover(self):
+        print("Enforcing no diagonal pipeline crossing...")
         edges = [edge for edge in self.edges]
 
         for pathname in self.existingPath.keys():
@@ -368,9 +372,12 @@ class alternateNetworkGeo(DiGraph):
                         self.edges[(lower_diag, upper_diag)]['weight'] = 1e9
                     if (upper_diag, lower_diag) in edges:
                         self.edges[(upper_diag, lower_diag)]['weight'] = 1e9
+        print('No pipeline diaginal crossing enforced')
+        print("")
         return
     
     def enforce_no_path_diagonal_Xover(self, path_tup):
+        print("Enforcing no diagonal path crossing...")
         edges = [edge for edge in self.edges]
 
         for nodepair in path_tup:
@@ -391,6 +398,8 @@ class alternateNetworkGeo(DiGraph):
                     self.edges[(lower_diag, upper_diag)]['weight'] = 1e9
                 if (upper_diag, lower_diag) in edges:
                     self.edges[(upper_diag, lower_diag)]['weight'] = 1e9
+        print('No pipeline diaginal crossing enforced')
+        print("")
         return
     
     
@@ -423,7 +432,8 @@ class alternateNetworkGeo(DiGraph):
     
     
     def generateDelaunayNetwork(self):
-        self.D = networkDelanunay(width=self.width-1, height=self.height-1)
+        print("Generating Delanuay Network...")
+        self.D = networkDelanunay(width=self.width, height=self.height)
         assets = []
         for key, asset in self.assetsXY.items():
             assets.append(asset)
@@ -431,6 +441,8 @@ class alternateNetworkGeo(DiGraph):
         assets = np.array(assets)
         self.D.add_points_from_list(assets)
         self.D.createDelaunayNetwork()
+        print("Delaunay network generated")
+        print('')
 
         
     def showDelaunayNetwork(self):
@@ -482,17 +494,20 @@ class alternateNetworkGeo(DiGraph):
         return slength, spath
     
     def get_all_source_sink_shortest_paths(self):
-        lines = self.D.getDelaunayNetwork()
-        for line in lines:
+        print('Generating all Delaunay pair shortest path...')
+        self.lines = self.D.getDelaunayNetwork()
+        for line in self.lines:
             cost, path = self.get_shortest_path_and_length(line[0], line[1])
             self.spathsCost[(line[0], line[1])] = cost
             self.spaths[(line[0], line[1])] = path
             self.initial_pipe_spaths[(line[0], line[1])] = path
             
             path_tup = [(path[i], path[i+1]) for i in range(len(path)-1)]
-            self.enforce_no_path_diagonal_Xover(path_tup)
+            # self.enforce_no_path_diagonal_Xover(path_tup)
         
         self._generate_assetsPT()
+        print('Done generating shortest paths.')
+        print("")
             
     def get_spathsCost(self):
         return self.spathsCost
@@ -568,6 +583,7 @@ class alternateNetworkGeo(DiGraph):
         return
     
     def get_pipe_trans_nodes(self):
+        print('Generating Pipeline transshipment nodes...')
         existingPathVertices = self.existingPathVertices.copy()       
         spaths = self.spaths.copy()
         
@@ -629,11 +645,13 @@ class alternateNetworkGeo(DiGraph):
             del self.spaths[conn]
             del self.spathsCost[conn]
                         
-                        
+        print('Pipeline Transshipment Nodes generated.')
+        print('')            
         return
                 
         
     def pipe_post_process(self):
+        print("Post processing Pipeline Paths...")
         self._generate_assetsPT() 
         
         for pathname in self.existingPath.keys():
@@ -670,6 +688,8 @@ class alternateNetworkGeo(DiGraph):
                 self.spathsCost[edge] = slength
                 
         self._generate_assetsPT()
+        print("Pipeline post process complete.")
+        print('')
             
             
     def _print_assetNameFromPT(self):
@@ -677,6 +697,7 @@ class alternateNetworkGeo(DiGraph):
         print(len(self.assetNameFromPT))
     
     def get_trans_nodes(self):
+        print('Generating paths transshipment nodes...')
         self._generate_assetsPT()   
         spaths = self.spaths.copy()
 
@@ -767,10 +788,12 @@ class alternateNetworkGeo(DiGraph):
             del self.spaths[conn]
             del self.spathsCost[conn]
                         
-                        
+        print('pipe transshipment nodes generated.')
+        print('')                
         return
     
     def trans_node_post_process(self):
+        print('Started post processing of path transshipment nodes...')
         self._generate_assetsPT() 
         
         for pathname in self.initial_pipe_spaths.keys():
@@ -807,6 +830,8 @@ class alternateNetworkGeo(DiGraph):
                 self.spathsCost[edge] = slength
                 
         self._generate_assetsPT()
+        print('path transhipment nodes processing done.')
+        print('')
         
     def plot_extracted_graph(self):
         res = []
@@ -831,6 +856,7 @@ class alternateNetworkGeo(DiGraph):
         plt.show()
         
     def shortest_paths_post_process(self):
+        print('Post processing of shortest paths initiated...')
         spaths = self.spaths.copy()
         spathsCost = self.spathsCost.copy()
         
@@ -851,9 +877,13 @@ class alternateNetworkGeo(DiGraph):
                 t_length += self.edges[(nodelist[i], nodelist[i+1])]['length']
             self.spathsWeight[key] = t_weight
             self.spathsLength[key] = t_length
+        
+        print('shortest paths post processing completed.')
+        print('')
 
     
     def _getMappingData(self):
+        print('Generating Mapping Data...')
         assets_df = {"Name": [],
                 "Lat": [],
                 "Lon": [],
@@ -905,7 +935,9 @@ class alternateNetworkGeo(DiGraph):
 
         self.existing_path_df = pd.DataFrame(existing_path_df)
         
-        self.lines = self.D.getDelaunayNetwork()
+        # self.lines = self.D.getDelaunayNetwork()
+        print('Mapping Data sucessfully generated.')
+        print('')
 
 
     def _getDelaunayMapFig(self):

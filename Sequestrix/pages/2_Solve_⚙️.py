@@ -35,7 +35,7 @@ for key in keys_to_track:
 
 
 def writeSoln(dur: int, target: float, crf: float, soln_arcs : Dict, soln_sources: Dict, soln_sinks: Dict, 
-              soln_cap_costs: Dict, soln_storage_costs: Dict, soln_transport_costs: Dict, pipeResult, data, filename=OUTPUT_FILE_PATH):
+              soln_cap_costs: Dict, soln_storage_costs: Dict, soln_transport_costs: Dict, pipeResult, data, costs, filename=OUTPUT_FILE_PATH):
     total_captured = sum(soln_sources.values())
     total_stored = sum(soln_sinks.values())
     total_capture_cost = sum(soln_cap_costs.values())
@@ -66,9 +66,9 @@ def writeSoln(dur: int, target: float, crf: float, soln_arcs : Dict, soln_source
             writer.writerow([sink, data.get_Name_From_ID(sink), soln_sinks[sink]/dur, soln_storage_costs[sink]/dur])
         writer.writerow([""])
         writer.writerow(["CO2 TRANSPORT PIPELINES SOLUTION BREAKDOWN"])
-        writer.writerow(["Start Point", "End Point", "Length (km)", "CO2 Transported (MTCO2/yr)", "Transport Cost ($M/yr)"])
+        writer.writerow(["Start Point", "End Point", "Length (km)", "Weight", "CO2 Transported (MTCO2/yr)", "Transport Cost ($M/yr)"])
         for arc in soln_arcs.keys():
-            writer.writerow([arc[0], arc[1], pipeResult[arc]["length"], soln_arcs[arc], soln_transport_costs[arc]/dur])
+            writer.writerow([arc[0], arc[1], pipeResult[arc]["length"], costs[arc][2], soln_arcs[arc], soln_transport_costs[arc]/dur])
         writer.writerow([""])
 
 start_time = time.time()
@@ -160,7 +160,6 @@ def solveModel(pipe_path, input_path, dur, tar, crf=0.01):
 
             g.generateDelaunayNetwork()
             g.enforce_no_pipeline_diagonal_Xover()
-
             g.get_all_source_sink_shortest_paths()
             g.get_trans_nodes()
             g.trans_node_post_process()
@@ -200,7 +199,7 @@ def solveModel(pipe_path, input_path, dur, tar, crf=0.01):
 
 
             writeSoln(duration, target_cap, crf_input, soln_arcs, soln_sources, soln_sinks, soln_cap_costs,
-                    soln_storage_costs, soln_transport_costs, pipe_result, data=data)
+                    soln_storage_costs, soln_transport_costs, pipe_result, data=data, costs=costs)
 
 
             #extract final plot and update progress bar
