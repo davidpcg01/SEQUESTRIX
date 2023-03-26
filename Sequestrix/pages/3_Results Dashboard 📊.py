@@ -178,7 +178,7 @@ if st.session_state.solved:
             
 
         with fig_col4:
-            st.markdown(f"#### Total Capture Volume over {dur} yrs: {total_cap} MTCO2")
+            st.markdown(f"#### Total Capture Volume over {dur} yrs: {round(total_cap*dur,2)} MTCO2")
             fig4 = px.pie(df_capture, values="Total CO2 Captured (MTCO2)", names="CO2 Source ID", hover_name="CO2 Source Name", color_discrete_sequence=px.colors.sequential.RdBu)
             st.plotly_chart(fig4, use_container_width=True)
 

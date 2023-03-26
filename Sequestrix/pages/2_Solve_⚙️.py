@@ -34,6 +34,7 @@ for key in keys_to_track:
         st.session_state[key] = None
 
 
+
 def writeSoln(dur: int, target: float, crf: float, soln_arcs : Dict, soln_sources: Dict, soln_sinks: Dict, 
               soln_cap_costs: Dict, soln_storage_costs: Dict, soln_transport_costs: Dict, pipeResult, data, costs, filename=OUTPUT_FILE_PATH):
     total_captured = sum(soln_sources.values())
@@ -119,8 +120,12 @@ elif (crf_input) and (crf_input != st.session_state.crf):
 
 #DEFINE SOLVE FUNCTION WITH CACHE
 @st.cache_data
-def solveModel(pipe_path, input_path, dur, tar, crf=0.01):
+def solveModel(pipe_path, input_path, dur, tar, direction, tiein, point1, point2, exclusion, etype, onlyin, onlyout, crf=0.01):
     with st.sidebar:
+        if point1[0] == "":
+            point1=None
+        if point2[0] == "":
+            point2=None
         progress_text = "CO2 Network Optimization in progress. Please wait."
         my_bar = st.progress(0, text=progress_text)
 
@@ -143,7 +148,7 @@ def solveModel(pipe_path, input_path, dur, tar, crf=0.01):
 
 
             if pipe_path:
-                g.import_pipeline_lat_long(input_dir=pipe_path)
+                g.import_pipeline_lat_long(input_dir=pipe_path, flowtype=direction)
 
             if input_path:
                 #Import source and sink info
@@ -159,11 +164,13 @@ def solveModel(pipe_path, input_path, dur, tar, crf=0.01):
             my_bar.progress(counter, text=progress_text)
 
             g.generateDelaunayNetwork()
+            if tiein:
+                g.enforce_pipeline_tie_point(point1=point1, point2=point2, exclusion=exclusion, etype=etype, onlyin=onlyin, onlyout=onlyout)
             g.enforce_no_pipeline_diagonal_Xover()
             g.get_all_source_sink_shortest_paths()
+            g.get_pipe_trans_nodes()
             g.get_trans_nodes()
             g.trans_node_post_process()
-            g.get_pipe_trans_nodes()
             g.pipe_post_process()
             g.shortest_paths_post_process()
             g._getMappingData()
@@ -188,7 +195,7 @@ def solveModel(pipe_path, input_path, dur, tar, crf=0.01):
 
 
             #initialize network model
-            model = Math_model(nodes, b, arcs, costs, paths, nodesCost, duration, target_cap, crf=crf_input)
+            model = Math_model(nodes, b, arcs, costs, paths, nodesCost, duration, target_cap, crf=crf)
             model.build_model()
             model.solve_model()
 
@@ -223,7 +230,9 @@ tab1, tab2, tab3 = st.tabs(["Delanuay Triangulation △", "Alternate Pipeline Ro
 if solveButton:
     st.session_state.solved = False
     fig1, fig2, fig3 = solveModel(pipe_path=st.session_state.PIPELINE_FILE, input_path=st.session_state.INPUT_FILE, dur=st.session_state.dur,
-                            tar=st.session_state.target, crf=0.01)
+                            tar=st.session_state.target, crf=crf_input, direction=st.session_state.direction, tiein=st.session_state.tiein,
+                            point1=st.session_state.point1, point2=st.session_state.point2, exclusion=st.session_state.exclusion,
+                            etype=st.session_state.etype, onlyin=st.session_state.onlyin, onlyout=st.session_state.onlyout)
 
     st.session_state.p3_fig1 = fig1
     st.session_state.p3_fig2 = fig2

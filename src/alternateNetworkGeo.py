@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from itertools import combinations
 import plotly.express as px
 import plotly.graph_objects as go
+import random
 
 
 rcParams['figure.figsize'] = 10, 8
@@ -218,16 +219,26 @@ class alternateNetworkGeo(DiGraph):
     def get_initial_pipe_spaths(self):
         return self.initial_pipe_spaths
     
-    def enforce_pipeline_tie_point(self, pathname, point1=None, point2=None, exclusion=False, etype='before', onlyin=False, onlyout=False):
+    def enforce_pipeline_tie_point(self, pathname=None, point1=None, point2=None, exclusion=False, etype='before', onlyin=False, onlyout=False):
         #convert x,y to points on the graph
+        # if point1:
+        #     point1 = self.gt._xyToCell(point1[0], point1[1])
+        # if point2:
+        #     point2 = self.gt._xyToCell(point2[0], point2[1])
+        print("Enforcing Pipeline Tie-in Points")
         if point1:
-            point1 = self.gt._xyToCell(point1[0], point1[1])
+            point1 = self.gt._latlonToCell(float(point1[0]), float(point1[1]))
         if point2:
-            point2 = self.gt._xyToCell(point2[0], point2[1])
+            point2 = self.gt._latlonToCell(float(point2[0]), float(point2[1]))
+
+        if pathname is None:
+            keys = [key for key in self.existingPath.keys()]
+            pathname = keys[0]
         
         
         #case 1: 2 tie in points with all exclusion
         if point1 and point2 and (not exclusion):
+            print("case 1: 2 tie in points with all exclusion")
             for edge in self.edges:
                 #in
                 if (edge[1] in self.existingPathVertices[pathname]) and (edge[0] not in self.existingPathVertices[pathname]) \
@@ -250,6 +261,7 @@ class alternateNetworkGeo(DiGraph):
             
         #case 2: 2 tie in points with exclusion at ends
         elif point1 and point2 and exclusion:
+            print("#case 2: 2 tie in points with exclusion at ends")
             #get all the vertices before and after point 1 and 2
             pathvertices = self.existingPathVertices[pathname].copy()
             minidx, maxidx = map(pathvertices.index, (point1, point2))
@@ -280,6 +292,7 @@ class alternateNetworkGeo(DiGraph):
         else:
             #case 3 single point with all exclusion but source/sink
             if (point1 or point2) and (not exclusion):
+                print("#case 3 single point with all exclusion but source/sink")
                 point = point1 or point2
                 pathvertices = self.existingPathVertices[pathname].copy()
                 if pathvertices[0] > pathvertices[-1]: #make the path always read from left to right
@@ -313,6 +326,7 @@ class alternateNetworkGeo(DiGraph):
             
             #case 4 single point with before or after exclusion on one end
             elif (point1 or point2) and exclusion:
+                print("#case 4 single point with before or after exclusion on one end")
                 point = point1 or point2
                 pathvertices = self.existingPathVertices[pathname].copy()
                 if pathvertices[0] > pathvertices[-1]: #make the path always read from left to right
@@ -346,6 +360,7 @@ class alternateNetworkGeo(DiGraph):
                         if (edge[1] in pathvertices) and (edge[1] not in exclusion_list) \
                             and (edge[1] != end2) and (edge[1] != end1) and (edge[0] not in pathvertices):
                             self.edges[edge]['weight'] = 1e9
+        print("")
                 
 
     
