@@ -105,7 +105,7 @@ if st.session_state.solved:
 
         unit_cap_cost =  sum(df_capture["Capture Cost ($M/yr)"]) / sum(df_capture["Capture Amount (MTCO2/yr)"])
         unit_sto_cost = sum(df_storage["Storage Cost ($M/yr)"]) / sum(df_storage["Storage Amount (MTCO2/yr)"])
-        unit_trans_cost = sum(df_transport["Transport Cost ($M/yr)"]) / sum(df_transport["CO2 Transported (MTCO2/yr)"])
+        unit_trans_cost = sum(df_transport["Transport Cost ($M/yr)"]) / sum(df_capture["Capture Amount (MTCO2/yr)"])
         unit_total_cost = unit_sto_cost + unit_trans_cost + unit_cap_cost
         col5, col6, col7 = st.columns([2,1.9,0.7])
         col5.metric("Unit Capture Cost ($/tCO2)", round(unit_cap_cost,2))

@@ -256,16 +256,23 @@ class geoTransformation:
 
 if __name__ == "__main__":
     gt = geoTransformation()
-    gt.processGeoCost()
+    gt._loadgeogrid()
+    # gt.processGeoCost()
     # loc_list = [[10, 18], [20,75], [50,50], [80,35], [80,90]]
     # for pair in loc_list:
     #     lat, lon = gt._xyToLatLon(pair[0],pair[1])
     #     print(lat, lon)
     # cell = gt._latlonToCell(lat, lon)
-    print(gt._latlonToXY(37.306068, -97.162054)) #nw
-    print(gt._latlonToXY(35.805645, -97.162054)) #sw
-    print(gt._latlonToXY(37.306068, -93.379661)) #ne
-    print(gt._latlonToXY(35.805645, -93.379661)) #se
+    # print(gt._latlonToXY(37.04662, -95.6062))
+    # print(gt._xyToLatLon(3499, 1480))
+    print(gt._latlonToCell(35.011677, -97.781262))
+    lat, lon = gt._cellToLatLon(11964350)
+    print(lat, lon)
+    print(gt._latlonToCell(lat, lon))
+    # print(gt._latlonToXY(37.306068, -97.162054)) #nw
+    # print(gt._latlonToXY(35.805645, -97.162054)) #sw
+    # print(gt._latlonToXY(37.306068, -93.379661)) #ne
+    # print(gt._latlonToXY(35.805645, -93.379661)) #se
     # print(gt._xyToLatLon(251, 263))
     # print(gt._cellToXY(205199))
     # print(gt._xyToCell(251,263))
@@ -273,10 +280,10 @@ if __name__ == "__main__":
     # print(gt._xyToCell(2487,1252))
     # print(gt._xyToCell(2770,1418))
     # print(gt._xyToCell(2825,1252))
-    print(gt._xyToCell(3313,1450))
-    print(gt._xyToCell(3313,1630))
-    print(gt._xyToCell(3767,1450))
-    print(gt._xyToCell(3767,1630))
+    # print(gt._xyToCell(3313,1450))
+    # print(gt._xyToCell(3313,1630))
+    # print(gt._xyToCell(3767,1450))
+    # print(gt._xyToCell(3767,1630))
     # print(cell)
     # print(gt._cellToLatLon(cell))
     # print(gt.getEdgesList())

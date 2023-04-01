@@ -155,6 +155,8 @@ class alternateNetworkGeo(DiGraph):
                 
                 for i in range(len(start_list)):
                     pipe_nodes_mod.append((start_list[i], end_list[i]))
+        
+        # print("PIPE NODE MOD: ", pipe_nodes_mod)
 
         print("Embedding zero cost path...")
         self.add_existing_zero_cost_path(pathname, pipe_nodes_mod, flowtype)
@@ -230,6 +232,8 @@ class alternateNetworkGeo(DiGraph):
             point1 = self.gt._latlonToCell(float(point1[0]), float(point1[1]))
         if point2:
             point2 = self.gt._latlonToCell(float(point2[0]), float(point2[1]))
+
+        # print("POINT1 & 2: ", point1, point2)
 
         if pathname is None:
             keys = [key for key in self.existingPath.keys()]
@@ -1005,20 +1009,63 @@ class alternateNetworkGeo(DiGraph):
 
         return fig2
     
-    def _getSolnNetworkMapFig(self, soln_arcs):              
+    def _getSolnNetworkMapFig(self, soln_arcs, point1=None, point2=None, show_alt=True):              
         fig3 = px.scatter_mapbox(self.assets_df, lat="Lat", lon="Lon", hover_name="Name", color="Type", zoom=7, height=1000, width=1000, size="Lat", 
                                 color_discrete_map={"source":"red", "sink":"green",  "node":"orange"})
         fig3.update_layout(mapbox_style="open-street-map")
 
-        for pipe in self.unique_pipes: 
-            fig3.add_trace(go.Scattermapbox(
-                mode = "lines",
-                lat = self.pipelines_df[self.pipelines_df.Name == pipe]["Lat"],
-                lon = self.pipelines_df[self.pipelines_df.Name == pipe]["Lon"],
+        if show_alt:
+            for pipe in self.unique_pipes: 
+                fig3.add_trace(go.Scattermapbox(
+                    mode = "lines",
+                    lat = self.pipelines_df[self.pipelines_df.Name == pipe]["Lat"],
+                    lon = self.pipelines_df[self.pipelines_df.Name == pipe]["Lon"],
+                    showlegend=False,
+                    line={'color':'blue'},
+                    name = str(pipe)
+                ))
+        
+        if point1:
+            if point1 != ["", ""]:
+                fig3.add_trace(go.Scattermapbox(
+                        mode = "markers",
+                        lat = [point1[0]],
+                        lon = [point1[1]],
+                        showlegend=True,
+                        opacity=0.8,
+                        marker={'size': 20, 'color':'orange'},
+                        name = str("Tie-in Point 1")
+                        ))
+                fig3.add_trace(go.Scattermapbox(
+                mode = "markers",
+                lat = [point1[0]],
+                lon = [point1[1]],
                 showlegend=False,
-                line={'color':'blue'},
-                name = str(pipe)
-            ))
+                opacity=0.8,
+                marker={'size': 10, 'color':'black'},
+                name = str("Tie-in Point 1")
+                ))
+
+        if point2:
+            if point2 != ["", ""]:
+                fig3.add_trace(go.Scattermapbox(
+                        mode = "markers",
+                        lat = [point2[0]],
+                        lon = [point2[1]],
+                        showlegend=True,
+                        opacity=0.8,
+                        marker={'size': 20, 'color':'orange'},
+                        name = str("Tie-in Point 2")
+                        ))
+                fig3.add_trace(go.Scattermapbox(
+                mode = "markers",
+                lat = [point2[0]],
+                lon = [point2[1]],
+                showlegend=False,
+                opacity=0.8,
+                marker={'size': 10, 'color':'black'},
+                name = str("Tie-in Point 2")
+                ))
 
         #addpipeline plot
         for path in self.existingPath.keys():

@@ -27,7 +27,7 @@ PIPELINE_FILE_PATH = os.path.join("Sequestrix/app/pipeline_files/Pipeline_File.x
 OUTPUT_FILE_PATH = os.path.join("Sequestrix/app/output_files/solution_file")
 
 
-keys_to_track = ["solveButton", "p3_fig1", "p3_fig2", "p3_fig3", "dur", "target", "crf", "solved"]
+keys_to_track = ["solveButton", "p3_fig1", "p3_fig2", "p3_fig3", "dur", "target", "crf", "solved", "showAlt"]
 
 for key in keys_to_track:
     if key not in st.session_state:
@@ -90,6 +90,8 @@ with st.sidebar:
         crf_input = st.number_input('Enter Capital Recovery Factor as Fraction')
     else:
         crf_input = st.number_input('Enter Capital Recovery Factor as Fraction', value=st.session_state.crf)
+
+    showAlt = st.checkbox("Show Alternate Network on Final Solution", value=st.session_state.showAlt)
     
     solveButton = st.button("Solve Model")
 
@@ -117,10 +119,18 @@ if st.session_state.crf is None:
 elif (crf_input) and (crf_input != st.session_state.crf):
     st.session_state.crf = crf_input
 
+if st.session_state["showAlt"] is None:
+        st.session_state["showAlt"] = showAlt
+elif (showAlt is False) and (showAlt != st.session_state.showAlt):
+    st.session_state["showAlt"] = showAlt
+elif (showAlt is True) and (showAlt != st.session_state.showAlt):
+    st.session_state["showAlt"] = showAlt
+
 
 #DEFINE SOLVE FUNCTION WITH CACHE
 @st.cache_data
-def solveModel(pipe_path, input_path, dur, tar, direction, tiein, point1, point2, exclusion, etype, onlyin, onlyout, crf=0.01):
+def solveModel(pipe_path, input_path, dur, tar, direction, tiein, point1, point2, exclusion, etype, onlyin, onlyout, showAlt, crf=0.01):
+    model_solve_start_time = time.time()
     with st.sidebar:
         if point1[0] == "":
             point1=None
@@ -211,13 +221,14 @@ def solveModel(pipe_path, input_path, dur, tar, direction, tiein, point1, point2
 
             #extract final plot and update progress bar
             # global fig3
-            fig3 = g._getSolnNetworkMapFig(soln_arcs)    
+            fig3 = g._getSolnNetworkMapFig(soln_arcs, point1=point1, point2=point2, show_alt=showAlt)    
             time.sleep(3.6)
             counter += 24
             my_bar.progress(counter, text=progress_text)
         
         st.session_state.solved = True
         st.success('Optimization Complete!', icon="✅")
+        st.write("Model Solve Time: %.2f seconds" % (time.time() - model_solve_start_time))
     
     return fig1, fig2, fig3
 
@@ -232,7 +243,8 @@ if solveButton:
     fig1, fig2, fig3 = solveModel(pipe_path=st.session_state.PIPELINE_FILE, input_path=st.session_state.INPUT_FILE, dur=st.session_state.dur,
                             tar=st.session_state.target, crf=crf_input, direction=st.session_state.direction, tiein=st.session_state.tiein,
                             point1=st.session_state.point1, point2=st.session_state.point2, exclusion=st.session_state.exclusion,
-                            etype=st.session_state.etype, onlyin=st.session_state.onlyin, onlyout=st.session_state.onlyout)
+                            etype=st.session_state.etype, onlyin=st.session_state.onlyin, onlyout=st.session_state.onlyout,
+                            showAlt=st.session_state.showAlt)
 
     st.session_state.p3_fig1 = fig1
     st.session_state.p3_fig2 = fig2

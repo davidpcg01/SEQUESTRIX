@@ -234,6 +234,45 @@ def showInputResults():
                 line={'width': 5, 'color':'purple'},
                 name = str(pipeline_line["Name"][0])
                 ))
+                if tiein or st.session_state.tiein:
+                    if st.session_state.point1 != ["", ""]:
+                        fig5.add_trace(go.Scattermapbox(
+                        mode = "markers",
+                        lat = [st.session_state.point1[0]],
+                        lon = [st.session_state.point1[1]],
+                        showlegend=True,
+                        opacity=0.8,
+                        marker={'size': 20, 'color':'orange'},
+                        name = str("Tie-in Point 1")
+                        ))
+                        fig5.add_trace(go.Scattermapbox(
+                        mode = "markers",
+                        lat = [st.session_state.point1[0]],
+                        lon = [st.session_state.point1[1]],
+                        showlegend=False,
+                        opacity=0.8,
+                        marker={'size': 10, 'color':'black'},
+                        name = str("Tie-in Point 1")
+                        ))
+                    if st.session_state.point2 != ["", ""]:
+                        fig5.add_trace(go.Scattermapbox(
+                        mode = "markers",
+                        lat = [st.session_state.point2[0]],
+                        lon = [st.session_state.point2[1]],
+                        showlegend=True,
+                        opacity=0.8,
+                        marker={'size': 20, 'color':'orange'},
+                        name = str("Tie-in Point 2")
+                        ))
+                        fig5.add_trace(go.Scattermapbox(
+                        mode = "markers",
+                        lat = [st.session_state.point2[0]],
+                        lon = [st.session_state.point2[1]],
+                        showlegend=False,
+                        opacity=0.8,
+                        marker={'size': 10, 'color':'black'},
+                        name = str("Tie-in Point 2")
+                        ))
 
 
 
