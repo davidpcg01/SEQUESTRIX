@@ -15,6 +15,13 @@ if "solved" not in st.session_state:
 
 OUTPUT_FILE_PATH = os.path.join("Sequestrix/app/output_files/solution_file.csv")
 
+with st.sidebar:
+     if st.session_state.solved:
+        export_fileName = st.text_input('Export File Name')
+        file_to_export = open(OUTPUT_FILE_PATH, 'r')
+        export_results = st.download_button(label='Export Result', data=file_to_export, 
+                                            file_name=f"{export_fileName}.csv")
+
 def read_result(filename=OUTPUT_FILE_PATH):
     df_capture = {"CO2 Source ID": [], "CO2 Source Name": [], "Capture Amount (MTCO2/yr)": [], "Capture Cost ($M/yr)": []}
     df_storage = {"CO2 Sink ID":[], "CO2 Sink Name":[], "Storage Amount (MTCO2/yr)":[], "Storage Cost ($M/yr)":[]}

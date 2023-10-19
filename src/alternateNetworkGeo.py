@@ -117,11 +117,11 @@ class alternateNetworkGeo(DiGraph):
         lower_bound = pipeline['Lower Cap'].values[0]
         upper_bound = pipeline['Upper Cap'].values[0]
         
-        for i in range(len(pipeline)):
+        for i in range(len(pipeline["Lat"])):
             cell = self.gt._latlonToCell(pipeline["Lat"][i], pipeline["Long"][i])
             if i == 0:
                 start_nodes.append(cell)
-            elif i == len(pipeline)-1:
+            elif i == len(pipeline["Lat"])-1:
                 end_nodes.append(cell)
             else:
                 start_nodes.append(cell)
@@ -724,27 +724,29 @@ class alternateNetworkGeo(DiGraph):
         conn_to_del = []
         
         for pathname in spaths.keys():
+            p_from_name = self.assetNameFromPT[pathname[0]] #get asset name of the start point in the shortest path for pathname under this loop
+            p_to_name = self.assetNameFromPT[pathname[1]] #get asset name of the end point in the shortest path for pathname under this loop
             for nodepair in spaths.keys():
                 entry = False
                 start = spaths[nodepair][0]
                 end = spaths[nodepair][-1]
 
-                for i in range(len(spaths[nodepair])):
-                    if (entry == False) and (spaths[nodepair][i] in spaths[pathname]):
+                for i in range(len(spaths[nodepair])): #loop through all the nodes in the path
+                    if (entry == False) and (spaths[nodepair][i] in spaths[pathname]): #find the first common node and set that as the entry point
                         entry = True
                         trans_nodes[(pathname, nodepair)] = [spaths[nodepair][i]]
-                    if (entry == True) and (spaths[nodepair][i] not in spaths[pathname]):
+                    if (entry == True) and (spaths[nodepair][i] not in spaths[pathname]): #find the first differnt node after entry and set that as exit point
                         trans_nodes[(pathname, nodepair)].append(spaths[nodepair][i-1])
                         break
                 
                 
                 if entry == True:
-                    if len(trans_nodes[(pathname, nodepair)]) == 1:
-                        trans_nodes[(pathname, nodepair)].append(spaths[nodepair][-1])
+                    if len(trans_nodes[(pathname, nodepair)]) == 1: #means there is entry but no exit or the 2 paths end at the same point
+                        trans_nodes[(pathname, nodepair)].append(spaths[nodepair][-1]) #set exit to the last node on the path
                     
-                    if trans_nodes[(pathname, nodepair)][0] == trans_nodes[(pathname, nodepair)][1]:
+                    if trans_nodes[(pathname, nodepair)][0] == trans_nodes[(pathname, nodepair)][1]: #means single point of entry and exit from one path to the other or entry=exit
                         pass
-                    else:
+                    else: #both pipes inteserct over a few nodes, i.e it enters and stays for a while and then leaves ~layman explanation
                         node1 = trans_nodes[(pathname, nodepair)][0]
                         node2 = trans_nodes[(pathname, nodepair)][1]
                         idx1 = spaths[nodepair].index(node1)
@@ -754,35 +756,35 @@ class alternateNetworkGeo(DiGraph):
                         self._generate_assetsPT()
                 
 
-                        if start != node1:
-                            self.spaths[(start, node1)] = self.spaths[nodepair][0:idx1+1]
+                        if start != node1: #if the start node and the entry point are not the same
+                            self.spaths[(start, node1)] = self.spaths[nodepair][0:idx1+1] #add new spath such from start to entry
                             cost_1 = 0
-                            for i in range(len(self.spaths[(start, node1)])-1):
+                            for i in range(len(self.spaths[(start, node1)])-1): #generate cost from start to entry
                                 cost_1 += \
                                 self.edges[self.spaths[(start, node1)][i], self.spaths[(start, node1)][i+1]]['weight']
-                            self.spathsCost[(start, node1)] = cost_1
+                            self.spathsCost[(start, node1)] = cost_1 #add spath costs for the path from start to entry
                         
-                        if node1 != node2:
-                            self.spaths[(node1, node2)] = self.spaths[nodepair][idx1:idx2+1]
+                        if node1 != node2: #Redundant IF, node1 cannot be node2 (i.e. entry=exit) as it has already been checked above however codeblock is relevant
+                            self.spaths[(node1, node2)] = self.spaths[nodepair][idx1:idx2+1] #add new path from entry to exit
                             cost_2 = 0
-                            for i in range(len(self.spaths[(node1, node2)])-1):
+                            for i in range(len(self.spaths[(node1, node2)])-1):#generate cost of path from entry to exit
                                 cost_2 += \
                                 self.edges[self.spaths[(node1, node2)][i], self.spaths[((node1, node2))][i+1]]['weight']
-                            self.spathsCost[(node1, node2)] = cost_2
+                            self.spathsCost[(node1, node2)] = cost_2 #add path costs from entry to exit
                         
                         if node2 != end:
-                            self.spaths[(node2, end)] = self.spaths[nodepair][idx2:]
+                            self.spaths[(node2, end)] = self.spaths[nodepair][idx2:]#add new path from exit to end of original path
                             cost_3 = 0
-                            for i in range(len(self.spaths[(node2, end)])-1):
+                            for i in range(len(self.spaths[(node2, end)])-1): #generat cost of path from exit to end
                                 cost_3 += \
                                 self.edges[self.spaths[(node2, end)][i], self.spaths[((node2, end))][i+1]]['weight']
-                            self.spathsCost[(node2, end)] = cost_3
+                            self.spathsCost[(node2, end)] = cost_3 #add new cost to spaths
                         
-                        from_name = self.assetNameFromPT[nodepair[0]]
-                        to_name = self.assetNameFromPT[nodepair[1]]
+                        from_name = self.assetNameFromPT[nodepair[0]] #get asset name of the start point in the shortest path for nodepair under this loop
+                        to_name = self.assetNameFromPT[nodepair[1]] #get asset name of the end point in the shortest path for nodepair under this loop
                         
                             
-                        if node1 in self.assetNameFromPT.keys():
+                        if node1 in self.assetNameFromPT.keys(): #check if the entry point represents an asset already
                             if ('sink' not in self.assetNameFromPT[node1]) \
                                 and ('source' not in self.assetNameFromPT[node1]):
                                 self.assetsXY[str(pathname) + f" from {from_name} to {to_name} node1"] = \
@@ -800,8 +802,10 @@ class alternateNetworkGeo(DiGraph):
                             self.assetsXY[str(pathname) + f" from {from_name} to {to_name} node2"] = \
                             self.gt._cellToXY(node2)
 
-                        conn_to_del.append((start, end))
-#                         self._generate_assetsPT()
+                        conn_to_del.append((start, end)) #append the nodepair path t
+                        # conn_to_del.append((spaths[pathname][0], spaths[pathname][1])) #append the pathname path to be deleted
+
+
         
         for conn in list(set(conn_to_del)):            
             del self.spaths[conn]
@@ -810,6 +814,10 @@ class alternateNetworkGeo(DiGraph):
         print('pipe transshipment nodes generated.')
         print('')                
         return
+    
+
+
+
     
     def trans_node_post_process(self):
         print('Started post processing of path transshipment nodes...')

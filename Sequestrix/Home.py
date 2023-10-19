@@ -12,3 +12,6 @@ st.sidebar.header("")
 # st.sidebar.header(':blue[Pages]')
     
 st.image(r"Sequestrix/network.jpg", width=800)
+
+st.write('#')
+st.write("Developed by David Nnamdi")

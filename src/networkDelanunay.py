@@ -33,8 +33,13 @@ class networkDelanunay:
     
     
     def createDelaunayTriangles(self):
-        tri = Delaunay(self.points)
-        self.dtriangles = self.points[tri.simplices].copy()
+        if len(self.points) > 2:
+            tri = Delaunay(self.points)
+            self.dtriangles = self.points[tri.simplices].copy()
+            return "3+"
+        else:
+            return "2"
+
         
     def plotNetwork(self): #TODO
         for line in self.lines:
@@ -103,6 +108,11 @@ class networkDelanunay:
         
         self.lines = result.copy()
 
+    def extractSingleLine(self):
+        pt1 = self.get_grid_pt(self.points[0])
+        pt2 = self.get_grid_pt(self.points[1])
+        self.lines = [[pt1, pt2]]
+
         
     def getPoints(self):
         return self.points
@@ -134,10 +144,13 @@ class networkDelanunay:
         
 
     def createDelaunayNetwork(self):
-        self.createDelaunayTriangles()
+        res = self.createDelaunayTriangles()
         # self.generatepointxyloc()
-        self.conDTriang_to_line()
-        self.extractUniqueLines()
+        if res == "3+":
+            self.conDTriang_to_line()
+            self.extractUniqueLines()
+        else:
+            self.extractSingleLine()
 
         
     def getDelaunayNetwork(self):
@@ -166,15 +179,16 @@ class networkDelanunay:
     
 if __name__ == '__main__':
     start = time.time()
-    points = np.array([[10,18],[20,75],[50,50],[80,35], [80,90]])
+    points = np.array([[10,18],[20,75]])
     D = networkDelanunay(width=6983, height=2983)
     D.add_points_from_list(points)
     D.createDelaunayNetwork()
-    # print(D.width)
+    print(D.dtriangles)
     # print(D.height)
     pt = [1,2]
     print(D.get_point_from_xy(pt[0], pt[1]))
     print(D.get_grid_pt(pt))
+    print(D.getDelaunayNetwork())
     # max_point = ((D.height+1)*(D.width+1))
     # print(max_point)
     # print(D.get_xy_from_point(max_point))
