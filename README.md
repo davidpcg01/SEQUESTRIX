@@ -6,7 +6,7 @@ Building on some of the foundations laid by SimCCS, the design enables embedding
 
 Sequestrix was built using mostly open-source tools and the framework is as described in the illustration below:
 
-![1697751276705](sequestrix.jpg)
+![1697751276705](input_data/ReadME_Images/sequestrix.jpg)
 
 The typical sequestrix workflow is as follows:
 
@@ -44,7 +44,7 @@ streamlit run Sequestrix/Home.py
 ```
 
 The user Interface opened should look like this:
-![1697751276705](sequestrix-home.jpg)
+![1697751276705](input_data/ReadME_Images/sequestrix-home.jpg)
 
 At this point you are free to run your analysis. A quick user guide is made available in this repository. 
 
@@ -53,4 +53,4 @@ A conference paper publication was written to demonstrate using Sequestrix for m
 # SOLVER SELECTION
 
 For Sequestrix to work, one must have either the Gurobi or IBM CPLEX solver engines installed. There are free and professional versions of these solvers available. My general recommendation is to install gurobi free version (the python API is installed when you run step 3 in section above) and if you need to carry out more complex analysis and you are in academia, apply for an academic license. The table below sumarizes the difference between both Gurobi and CPLEX and why the underlying framework for Sequestrix was Built using Gurobi
-![1697751276705](gurobi-cplex.jpg)
+![1697751276705](input_data/ReadME_Images/gurobi-cplex.jpg)
