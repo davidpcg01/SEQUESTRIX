@@ -75,3 +75,4 @@ TestInput coffeyville.xlsx
 coffeyville pipeline.xlsx
 TestInput ends.xlsx
 Sequestrix/app/scenario_files/.log
+src/__pycache__
