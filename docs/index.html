@@ -4,7 +4,89 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sequestrix - CO2 Transport Network Optimization</title>
-<meta name="description" content="Open-source CO2 transport network optimization tool for designing, optimizing, and evaluating sequestration project economics.">
+<meta name="description" content="Sequestrix: open-source CO2 pipeline network optimization for carbon sequestration. Design transport routes, embed existing pipelines, evaluate CCS project economics.">
+<meta name="keywords" content="CO2 transport network, carbon sequestration optimization, CO2 pipeline design, CCUS, CCS economics, MILP optimization, 45Q tax credit, carbon capture, CO2 storage, pipeline network optimization, open source">
+<meta name="google-site-verification" content="google980435fc05f9fafa">
+<meta name="author" content="David Nnamdi">
+<meta name="theme-color" content="#0b0f19">
+<link rel="canonical" href="https://www.sequestrix.com/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sequestrix">
+<meta property="og:title" content="Sequestrix - CO2 Transport Network Optimization">
+<meta property="og:description" content="Open-source Python tool for optimizing CO2 pipeline transport networks for carbon sequestration projects. Embed existing pipelines, solve MILP optimization, evaluate project economics.">
+<meta property="og:url" content="https://www.sequestrix.com/">
+<meta property="og:image" content="https://repository-images.githubusercontent.com/davidpcg01/SEQUESTRIX">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sequestrix - CO2 Transport Network Optimization">
+<meta name="twitter:description" content="Open-source Python tool for optimizing CO2 pipeline transport networks for carbon sequestration projects. Embed existing pipelines, solve MILP optimization, evaluate project economics.">
+<meta name="twitter:image" content="https://repository-images.githubusercontent.com/davidpcg01/SEQUESTRIX">
+
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Sequestrix",
+    "description": "Open-source CO2 pipeline transport network optimization tool for carbon sequestration projects. Solves a Mixed-Integer Linear Program (MILP) to find minimum-cost source-sink pairings, pipeline routes, and build decisions.",
+    "url": "https://www.sequestrix.com",
+    "applicationCategory": "Science",
+    "operatingSystem": "Cross-platform",
+    "license": "https://opensource.org/licenses/MIT",
+    "isAccessibleForFree": true,
+    "codeRepository": "https://github.com/davidpcg01/SEQUESTRIX",
+    "programmingLanguage": "Python",
+    "author": {
+      "@type": "Person",
+      "name": "David Nnamdi",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "University of Oklahoma"
+      }
+    },
+    "citation": {
+      "@type": "ScholarlyArticle",
+      "name": "Embedding Existing Pipelines in Design of CO2 Transportation Networks for Optimal Sequestration Economics",
+      "url": "https://doi.org/10.2118/214917-PA"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "headline": "Embedding Existing Pipelines in Design of CO2 Transportation Networks for Optimal Sequestration Economics",
+    "author": [
+      {
+        "@type": "Person",
+        "name": "David Nnamdi",
+        "affiliation": { "@type": "Organization", "name": "University of Oklahoma" }
+      },
+      {
+        "@type": "Person",
+        "name": "R. G. Moghanloo",
+        "affiliation": { "@type": "Organization", "name": "University of Oklahoma" }
+      }
+    ],
+    "datePublished": "2026-01",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Society of Petroleum Engineers"
+    },
+    "isPartOf": {
+      "@type": "Periodical",
+      "name": "SPE Journal"
+    },
+    "volumeNumber": "31",
+    "issueNumber": "01",
+    "pageStart": "643",
+    "pageEnd": "660",
+    "identifier": "SPE-214917-PA",
+    "url": "https://doi.org/10.2118/214917-PA",
+    "sameAs": "https://doi.org/10.2118/214917-PA"
+  }
+]
+</script>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -529,7 +611,7 @@ main {
 <body>
 
 <!-- ==================== NAV ==================== -->
-<nav>
+<nav aria-label="Primary navigation">
   <div class="inner">
     <a href="#" class="logo"><span>Sequestrix</span></a>
     <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">&#9776;</button>
@@ -551,7 +633,7 @@ main {
 
 <!-- ==================== SIDEBAR ==================== -->
 <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
-<aside class="sidebar">
+<aside class="sidebar" aria-label="Section navigation">
   <div class="sidebar-section">
     <div class="sidebar-heading">Overview</div>
     <a href="#about">About</a>
@@ -574,7 +656,7 @@ main {
   </div>
 </aside>
 
-<main>
+<main aria-label="Documentation content">
 <!-- ==================== 1. HERO ==================== -->
 <section class="hero" id="hero">
   <div class="wrap">
@@ -1108,7 +1190,7 @@ cd SEQUESTRIX</code></pre>
 </main>
 
 <!-- ==================== 13. FOOTER ==================== -->
-<footer>
+<footer aria-label="Site footer">
   <div class="wrap">
     <div class="footer-links">
       <a href="https://github.com/davidpcg01/SEQUESTRIX" target="_blank" rel="noopener">GitHub</a>

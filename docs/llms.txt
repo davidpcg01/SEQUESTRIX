@@ -1,0 +1,35 @@
+# Sequestrix
+
+> Open-source Python tool for optimizing CO2 pipeline transport networks
+> for carbon sequestration projects. Solves a Mixed-Integer Linear Program
+> (MILP) to find minimum-cost source-sink pairings, pipeline routes, and
+> build decisions. Published in SPE Journal (2026).
+
+Sequestrix embeds existing pipelines into candidate network construction
+and optimization - a capability not available in prior open-source tools
+like SimCCS. It controls pipeline entry and egress using four tie-in
+algorithms with exclusion zones, supports multiperiod planning with
+time-varying capacities, and evaluates project economics including 45Q
+tax credits. Built with Python, Streamlit, Gurobi/CPLEX, NetworkX,
+and Plotly/Mapbox.
+
+## Docs
+
+- [Documentation site](https://www.sequestrix.com/): Full documentation with installation guide, input format, solver setup, case studies, mathematical formulation, and citation info
+- [GitHub repository](https://github.com/davidpcg01/SEQUESTRIX): Source code, README, and issue tracker
+- [Quick User Guide](https://github.com/davidpcg01/SEQUESTRIX/blob/main/SEQUESTRIX%20QUICK%20USER%20GUIDE.pdf): Step-by-step walkthrough with screenshots
+
+## Research
+
+- [SPE Journal Paper (2026)](https://doi.org/10.2118/214917-PA): Nnamdi, D. and Moghanloo, R. G. "Embedding Existing Pipelines in Design of CO2 Transportation Networks for Optimal Sequestration Economics." SPE Journal 31(01): 643-660. SPE-214917-PA.
+
+## Key Capabilities
+
+- Existing pipeline embedding with 4 tie-in/exclusion algorithms
+- Delaunay triangulation for candidate network generation
+- MILP optimization via Gurobi (primary) or CPLEX (fallback via PuLP)
+- Multiperiod planning with time-varying capture, storage, and targets
+- Scenario management: save, load, compare named optimization runs
+- Streamlit web interface with Plotly/Mapbox interactive maps
+- Results dashboard with economic classification and cost breakdowns
+- Case studies: Enid-Purdy pipeline (Oklahoma), CarbonSAFE II (Osage County)
