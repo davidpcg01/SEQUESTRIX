@@ -96,7 +96,50 @@ class InputData:
 
         return self.sourceCandidate, self.sinkCandidate, self.nodeCosts
 
-    
+    def _read_multiperiod_data(self):
+        self.multiperiod = False
+        self.source_cap_t = {}
+        self.sink_inject_t = {}
+        self.target_cap_t = {}
+
+        try:
+            sp_df = pd.read_excel(self.filename, sheet_name='source_periods')
+            for _, row in sp_df.iterrows():
+                src_id = f'source_{int(row["ID"])}'
+                t = int(row['Period'])
+                if src_id not in self.source_cap_t:
+                    self.source_cap_t[src_id] = {}
+                self.source_cap_t[src_id][t] = row['Capture Capacity (MTCO2/yr)']
+            self.multiperiod = True
+        except (ValueError, KeyError):
+            pass
+
+        try:
+            sk_df = pd.read_excel(self.filename, sheet_name='sink_periods')
+            for _, row in sk_df.iterrows():
+                sink_id = f'sink_{int(row["ID"])}'
+                t = int(row['Period'])
+                if sink_id not in self.sink_inject_t:
+                    self.sink_inject_t[sink_id] = {}
+                self.sink_inject_t[sink_id][t] = row['Injectivity Limit (MTCO2/yr)']
+            self.multiperiod = True
+        except (ValueError, KeyError):
+            pass
+
+        try:
+            tgt_df = pd.read_excel(self.filename, sheet_name='targets')
+            for _, row in tgt_df.iterrows():
+                t = int(row['Period'])
+                self.target_cap_t[t] = row['Target (MTCO2/yr)']
+            self.multiperiod = True
+        except (ValueError, KeyError):
+            pass
+
+    def process_data_multiperiod(self):
+        source, sink, costs = self.process_data()
+        self._read_multiperiod_data()
+        return source, sink, costs, self.source_cap_t, self.sink_inject_t, self.target_cap_t
+
     def get_ID_Names(self):
         return self.sourceID_Name, self.sinkID_Name
     

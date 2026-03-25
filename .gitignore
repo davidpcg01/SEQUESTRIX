@@ -74,5 +74,7 @@ TestInput ends 2.xlsx
 TestInput coffeyville.xlsx
 coffeyville pipeline.xlsx
 TestInput ends.xlsx
-Sequestrix/app/scenario_files/.log
+Sequestrix/app/scenario_files/
 src/__pycache__
+4-A SPE Journal Article Jan 2026.pdf
+spe-214917-pa.pdf

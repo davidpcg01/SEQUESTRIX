@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+ROOT_PATH = Path(__file__).parent.parent.parent.resolve()
+SRC_PATH = ROOT_PATH.joinpath("src")
+if str(SRC_PATH) not in sys.path:
+    sys.path.insert(1, str(SRC_PATH))
+
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
@@ -6,12 +14,16 @@ import pandas as pd
 import numpy as np
 import os
 import streamlit.components.v1 as components
+import scenario_manager
 
 
 st.set_page_config(page_title="Results Dashboard", page_icon="📊", layout="wide")
 
 if "solved" not in st.session_state:
         st.session_state["solved"] = False
+
+if "mp_solved" not in st.session_state:
+    st.session_state["mp_solved"] = False
 
 OUTPUT_FILE_PATH = os.path.join("Sequestrix/app/output_files/solution_file.csv")
 
@@ -21,6 +33,31 @@ with st.sidebar:
         file_to_export = open(OUTPUT_FILE_PATH, 'r')
         export_results = st.download_button(label='Export Result', data=file_to_export, 
                                             file_name=f"{export_fileName}.csv")
+
+        st.divider()
+        st.subheader("Save as Scenario")
+        scenario_name = st.text_input("Scenario Name", key="save_scenario_name_dash")
+        save_btn = st.button("Save Scenario", key="save_scenario_btn_dash")
+        if save_btn and scenario_name:
+            if scenario_manager.scenario_exists(scenario_name):
+                st.warning(f"Scenario '{scenario_name.strip()}' already exists and will be overwritten.")
+            metadata = {
+                "dur": int(st.session_state.get("dur", 0) or 0),
+                "target": st.session_state.get("target", 0),
+                "crf": st.session_state.get("crf", 0),
+                "multiperiod": bool(st.session_state.get("multiperiod", False)),
+                "num_periods": st.session_state.get("num_periods", None),
+            }
+            fig3 = st.session_state.get("p3_fig3", None)
+            ok, msg = scenario_manager.save_scenario(
+                scenario_name, OUTPUT_FILE_PATH, metadata,
+                network_map_fig=fig3)
+            if ok:
+                st.success(msg)
+            else:
+                st.error(msg)
+        elif save_btn and not scenario_name:
+            st.warning("Please enter a scenario name.")
 
 def read_result(filename=OUTPUT_FILE_PATH):
     df_capture = {"CO2 Source ID": [], "CO2 Source Name": [], "Capture Amount (MTCO2/yr)": [], "Capture Cost ($M/yr)": []}
@@ -93,7 +130,12 @@ def ColourWidgetText(wgt_txt, wch_colour = '#000000'):
     components.html(f"{htmlstr}", height=0, width=0)
 
 
-tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Capture", "Storage", "Transport"])
+if st.session_state.mp_solved:
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "Overview", "Capture", "Storage", "Transport", "Time Series"])
+else:
+    tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Capture", "Storage", "Transport"])
+
 if st.session_state.solved:
     df_capture, df_storage, df_transport, dur, target, total_cap = read_result()
     df_capture["Total CO2 Captured (MTCO2)"] = df_capture["Capture Amount (MTCO2/yr)"] * dur
@@ -230,7 +272,33 @@ if st.session_state.solved:
 
         with st.expander("See CO2 Transport Results Table"):
                 st.dataframe(df_transport)
-        
-        
 
+    if st.session_state.mp_solved:
+        with tab5:
+            sources_t = st.session_state.mp_sources_t
+            sinks_t = st.session_state.mp_sinks_t
+            arcs_t = st.session_state.mp_arcs_t
 
+            cap_rows = [{"Period": t, "Source": src, "Capture (MTCO2)": val}
+                        for (src, t), val in sources_t.items()]
+            cap_df = pd.DataFrame(cap_rows)
+
+            if not cap_df.empty:
+                fig_ts1 = px.line(cap_df, x="Period", y="Capture (MTCO2)",
+                                  color="Source", title="CO2 Capture by Source Over Time")
+                st.plotly_chart(fig_ts1, use_container_width=True)
+
+            sto_rows = [{"Period": t, "Sink": sink, "Storage (MTCO2)": val}
+                        for (sink, t), val in sinks_t.items()]
+            sto_df = pd.DataFrame(sto_rows)
+
+            if not sto_df.empty:
+                fig_ts2 = px.line(sto_df, x="Period", y="Storage (MTCO2)",
+                                  color="Sink", title="CO2 Storage by Sink Over Time")
+                st.plotly_chart(fig_ts2, use_container_width=True)
+
+                sto_df_sorted = sto_df.sort_values("Period")
+                sto_df_sorted["Cumulative (MTCO2)"] = sto_df_sorted.groupby("Sink")["Storage (MTCO2)"].cumsum()
+                fig_ts3 = px.area(sto_df_sorted, x="Period", y="Cumulative (MTCO2)",
+                                  color="Sink", title="Cumulative CO2 Stored Over Time")
+                st.plotly_chart(fig_ts3, use_container_width=True)

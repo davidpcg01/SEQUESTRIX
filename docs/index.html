@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sequestrix - CO2 Transport Network Optimization</title>
+<meta name="description" content="Open-source CO2 transport network optimization tool for designing, optimizing, and evaluating sequestration project economics.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+:root {
+  --bg: #0b0f19;
+  --bg-card: #131825;
+  --bg-code: #1a2035;
+  --border: #1e2a42;
+  --text: #c9d1d9;
+  --text-muted: #8b949e;
+  --heading: #e6edf3;
+  --accent: #22c55e;
+  --accent-dim: rgba(34,197,94,0.12);
+  --accent2: #38bdf8;
+  --accent2-dim: rgba(56,189,248,0.10);
+  --accent3: #f59e0b;
+  --red: #ef4444;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  --max-w: 1100px;
+  --radius: 10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; transition: color .2s; }
+a:hover { color: var(--accent2); }
+h1, h2, h3, h4 { color: var(--heading); font-weight: 600; }
+code {
+  font-family: var(--mono);
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.88em;
+  line-height: 1.6;
+  margin: 16px 0;
+}
+pre code { background: none; padding: 0; }
+.wrap { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+/* ---- NAV ---- */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(11,15,25,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+nav .inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+nav .logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--heading);
+  letter-spacing: -0.5px;
+}
+nav .logo span { color: var(--accent); }
+nav .links { display: flex; gap: 24px; align-items: center; }
+nav .links a { color: var(--text-muted); font-size: 0.9rem; font-weight: 500; }
+nav .links a:hover { color: var(--accent); }
+nav .gh-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent-dim); color: var(--accent);
+  padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+  border: 1px solid rgba(34,197,94,0.25);
+}
+nav .gh-btn:hover { background: rgba(34,197,94,0.2); color: #4ade80; }
+.menu-toggle { display: none; background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer; }
+
+/* ---- HERO ---- */
+.hero {
+  padding: 140px 0 80px;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 0%, rgba(34,197,94,0.08) 0%, transparent 60%);
+}
+.hero h1 {
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  letter-spacing: -1.5px;
+  margin-bottom: 16px;
+  line-height: 1.15;
+}
+.hero h1 span { color: var(--accent); }
+.hero .tagline {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  max-width: 640px;
+  margin: 0 auto 12px;
+}
+.hero .sub {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+.hero .sub a { color: var(--accent2); }
+.badge {
+  display: inline-block;
+  background: var(--accent-dim);
+  color: var(--accent);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  border: 1px solid rgba(34,197,94,0.2);
+}
+.hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: 8px;
+  font-weight: 600; font-size: 0.95rem;
+  transition: all .2s;
+}
+.btn-primary { background: var(--accent); color: #0b0f19; }
+.btn-primary:hover { background: #16a34a; color: #0b0f19; }
+.btn-outline {
+  border: 1px solid var(--border); color: var(--text);
+  background: transparent;
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---- SECTIONS ---- */
+section { padding: 80px 0; }
+section:nth-child(even) { background: rgba(19,24,37,0.5); }
+.section-label {
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.section-title {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+}
+.section-desc {
+  color: var(--text-muted);
+  max-width: 700px;
+  margin-bottom: 40px;
+  font-size: 1.05rem;
+}
+
+/* ---- FEATURE CARDS ---- */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+.feature-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  transition: border-color .25s, transform .25s;
+}
+.feature-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.feature-icon {
+  width: 42px; height: 42px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px;
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+}
+.fi-green { background: var(--accent-dim); color: var(--accent); }
+.fi-blue { background: var(--accent2-dim); color: var(--accent2); }
+.fi-amber { background: rgba(245,158,11,0.12); color: var(--accent3); }
+.feature-card h3 { font-size: 1.05rem; margin-bottom: 8px; }
+.feature-card p { color: var(--text-muted); font-size: 0.92rem; line-height: 1.55; }
+
+/* ---- WORKFLOW ---- */
+.workflow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+.workflow-step {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  position: relative;
+  padding-bottom: 32px;
+}
+.workflow-step:last-child { padding-bottom: 0; }
+.step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+.step-num {
+  width: 36px; height: 36px;
+  background: var(--accent);
+  color: #0b0f19;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.step-line {
+  width: 2px;
+  flex: 1;
+  background: var(--border);
+  min-height: 20px;
+}
+.step-content { padding-top: 4px; }
+.step-content h3 { font-size: 1rem; margin-bottom: 4px; }
+.step-content p { color: var(--text-muted); font-size: 0.92rem; }
+
+/* ---- APP PAGES ---- */
+.app-pages { display: flex; flex-direction: column; gap: 16px; }
+.app-page {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.app-page-num {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.85rem;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.app-page h3 { font-size: 1rem; margin-bottom: 4px; }
+.app-page p { color: var(--text-muted); font-size: 0.92rem; }
+
+/* ---- TECH STACK ---- */
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.tech-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.tech-item h4 { font-size: 0.95rem; margin-bottom: 6px; color: var(--accent2); }
+.tech-item p { font-size: 0.88rem; color: var(--text-muted); }
+
+/* ---- INSTALL STEPS ---- */
+.install-steps { counter-reset: install; }
+.install-step {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  counter-increment: install;
+}
+.install-step h3::before {
+  content: counter(install) ". ";
+  color: var(--accent);
+}
+.install-step h3 { font-size: 1rem; margin-bottom: 8px; }
+.install-step p { color: var(--text-muted); font-size: 0.92rem; }
+
+/* ---- TABLE ---- */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+th, td {
+  text-align: left;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+th { color: var(--heading); font-weight: 600; background: var(--bg-code); }
+td { color: var(--text-muted); }
+
+/* ---- CASE STUDIES ---- */
+.case-study {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  margin-bottom: 20px;
+}
+.case-study h3 { font-size: 1.1rem; margin-bottom: 12px; }
+.case-study p { color: var(--text-muted); font-size: 0.92rem; margin-bottom: 10px; }
+.stat-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
+.stat {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 18px;
+  text-align: center;
+  min-width: 120px;
+}
+.stat .val { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+.stat .label { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+/* ---- MATH ---- */
+.math-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin: 16px 0;
+  overflow-x: auto;
+}
+.math-block .katex { font-size: 1.05em; }
+
+/* ---- CITATION ---- */
+.citation-box {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin: 16px 0;
+}
+.citation-box p { font-size: 0.92rem; color: var(--text-muted); margin-bottom: 12px; }
+
+/* ---- FOOTER ---- */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+footer a { color: var(--accent); }
+footer .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 12px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 768px) {
+  nav .links { display: none; }
+  nav .links.open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 64px; left: 0; right: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    gap: 12px;
+  }
+  .menu-toggle { display: block; }
+  .hero { padding: 120px 0 60px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .app-page { flex-direction: column; }
+  .stat-row { flex-direction: column; }
+  .hero-btns { flex-direction: column; align-items: center; }
+}
+
+@media (min-width: 1025px) {
+  .sidebar-toggle { display: none !important; }
+}
+
+/* ---- SCROLLBAR ---- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #2a3a5c; }
+
+/* ---- INPUT FORMAT ---- */
+.sheet-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 12px;
+}
+.sheet-card h4 { color: var(--accent2); font-size: 0.95rem; margin-bottom: 8px; }
+.sheet-card p { color: var(--text-muted); font-size: 0.9rem; }
+.required-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.tag-required { background: rgba(239,68,68,0.15); color: var(--red); }
+.tag-optional { background: rgba(245,158,11,0.12); color: var(--accent3); }
+
+/* notation table */
+.notation-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 20px;
+  font-size: 0.9rem;
+}
+.notation-grid .sym { color: var(--heading); font-family: var(--mono); text-align: right; padding: 4px 0; }
+.notation-grid .def { color: var(--text-muted); padding: 4px 0; }
+
+/* ---- SIDEBAR ---- */
+.sidebar {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  width: 240px;
+  height: calc(100vh - 64px);
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 24px 0;
+  z-index: 90;
+  transition: transform 0.25s ease;
+}
+.sidebar-section {
+  padding: 0 16px;
+  margin-bottom: 20px;
+}
+.sidebar-heading {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  padding: 0 12px;
+  margin-bottom: 8px;
+}
+.sidebar a {
+  display: block;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+.sidebar a:hover {
+  color: var(--heading);
+  background: rgba(255,255,255,0.03);
+  border-left-color: var(--border);
+}
+.sidebar a.active {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.sidebar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.sidebar-toggle:hover { color: var(--accent); }
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 85;
+}
+
+main {
+  margin-left: 240px;
+}
+.hero { margin-left: -240px; }
+
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-overlay.open {
+    display: block;
+  }
+  .sidebar-toggle { display: block; }
+  main { margin-left: 0; }
+  .hero { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== NAV ==================== -->
+<nav>
+  <div class="inner">
+    <a href="#" class="logo"><span>Sequestrix</span></a>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">&#9776;</button>
+    <button class="menu-toggle" onclick="document.querySelector('.links').classList.toggle('open')" aria-label="Toggle menu">&#9776;</button>
+    <div class="links">
+      <a href="#about">About</a>
+      <a href="#features">Features</a>
+      <a href="#workflow">How It Works</a>
+      <a href="#install">Install</a>
+      <a href="#math">Formulation</a>
+      <a href="#citation">Cite</a>
+      <a href="https://github.com/davidpcg01/SEQUESTRIX" class="gh-btn" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ==================== SIDEBAR ==================== -->
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-heading">Overview</div>
+    <a href="#about">About</a>
+    <a href="#features">Features</a>
+    <a href="#workflow">How It Works</a>
+    <a href="#pages">App Pages</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-heading">Technical</div>
+    <a href="#architecture">Architecture</a>
+    <a href="#input-format">Input Format</a>
+    <a href="#solvers">Solvers</a>
+    <a href="#math">Formulation</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-heading">Getting Started</div>
+    <a href="#install">Installation</a>
+    <a href="#cases">Case Studies</a>
+    <a href="#citation">Citation</a>
+  </div>
+</aside>
+
+<main>
+<!-- ==================== 1. HERO ==================== -->
+<section class="hero" id="hero">
+  <div class="wrap">
+    <div class="badge">Open Source &middot; MIT License</div>
+    <h1><span>Sequestrix</span></h1>
+    <p class="tagline">CO<sub>2</sub> Transport Network Optimization for Carbon Sequestration Projects</p>
+    <p class="sub">
+      Design optimal pipeline networks, embed existing infrastructure, and evaluate project economics.
+      <br>Published in the <a href="https://doi.org/10.2118/214917-PA" target="_blank" rel="noopener">SPE Journal (2026)</a>.
+    </p>
+    <div class="hero-btns">
+      <a href="https://github.com/davidpcg01/SEQUESTRIX" class="btn btn-primary" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+      <a href="#install" class="btn btn-outline">Get Started</a>
+      <a href="https://doi.org/10.2118/214917-PA" class="btn btn-outline" target="_blank" rel="noopener">Read the Paper</a>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 2. ABOUT ==================== -->
+<section id="about">
+  <div class="wrap">
+    <div class="section-label">About</div>
+    <h2 class="section-title">What is Sequestrix?</h2>
+    <div class="section-desc">
+      An open-source tool for designing, optimizing, and evaluating the economics of CO<sub>2</sub> pipeline transport networks for carbon sequestration.
+    </div>
+    <p style="margin-bottom:16px;">
+      Large-scale carbon sequestration projects require connecting CO<sub>2</sub> capture sources to geological storage sinks through pipeline networks.
+      Determining the most cost-efficient pipeline routes is crucial during project scoping, as transportation costs are driven by pipeline length,
+      diameter, terrain, and existing infrastructure.
+    </p>
+    <p style="margin-bottom:16px;">
+      <strong>Sequestrix</strong> builds on the foundations laid by <a href="https://doi.org/10.1016/j.envsoft.2019.104560" target="_blank" rel="noopener">SimCCS</a>
+      and extends them with a key capability: <strong>embedding existing pipelines</strong> directly into the candidate network and optimization.
+      This allows operators to evaluate cost savings from repurposing existing CO<sub>2</sub> transport lines, a critical consideration
+      as the 2022 amendments to the <a href="https://www.law.cornell.edu/uscode/text/26/45Q" target="_blank" rel="noopener">45Q tax credits</a> (up to $85/tCO<sub>2</sub> for permanent storage)
+      make many previously uneconomical projects viable.
+    </p>
+    <p>
+      Sequestrix controls pipeline entry and egress using four configurable algorithms for tie-in points and exclusion zones,
+      then solves a Mixed-Integer Linear Program (MILP) to find the minimum-cost sequestration network. Results are displayed
+      on an interactive web interface powered by Streamlit with Plotly/Mapbox visualizations and analytics dashboards.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 3. KEY FEATURES ==================== -->
+<section id="features">
+  <div class="wrap">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">Built for Real-World Sequestration</h2>
+    <p class="section-desc">From data import to optimized economics, Sequestrix handles the full pipeline design workflow.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon fi-green">&#9655;</div>
+        <h3>Existing Pipeline Embedding</h3>
+        <p>Encode existing pipelines as zero-cost (or custom-cost) arcs in the cost surface graph. Four tie-in algorithms control entry and egress: unrestricted, fixed points, permitted segments with exclusion zones, and single tie-in with directional exclusion.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-blue">&#9651;</div>
+        <h3>Delaunay Triangulation</h3>
+        <p>Generate candidate pipeline networks using Delaunay triangulation to pair sources and sinks, then compute least-cost paths on the weighted cost surface graph for each pair.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-green">&#9881;</div>
+        <h3>MILP Optimization</h3>
+        <p>Minimize total sequestration cost (capture + storage + pipeline build + transport) using Gurobi as the primary solver, with automatic fallback to CPLEX via PuLP for larger models exceeding free license limits.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-amber">&#8635;</div>
+        <h3>Multiperiod Planning</h3>
+        <p>Extend optimization across multiple planning periods with time-varying capture capacities, storage injectivity limits, and per-period or cumulative CO<sub>2</sub> targets via optional Excel input sheets.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-blue">&#9776;</div>
+        <h3>Scenario Management</h3>
+        <p>Save optimization runs as named scenarios with metadata and network maps. Load, compare, and delete scenarios through a dedicated analysis page with side-by-side visualizations.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-green">&#9737;</div>
+        <h3>Interactive Web Interface</h3>
+        <p>Streamlit-powered multi-page application with Plotly and Mapbox visualizations. Upload data, configure solves, view results dashboards, and export solutions from the browser.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-amber">&#9733;</div>
+        <h3>Results Dashboard</h3>
+        <p>View key metrics, cost breakdowns by category (capture, storage, transport), economic classification (profitable/marginal/uneconomic), and time-series analytics for multiperiod solves.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 4. HOW IT WORKS ==================== -->
+<section id="workflow">
+  <div class="wrap">
+    <div class="section-label">Workflow</div>
+    <h2 class="section-title">How It Works</h2>
+    <p class="section-desc">Six steps from raw data to optimized network and project economics.</p>
+    <div class="workflow-steps">
+      <div class="workflow-step">
+        <div class="step-indicator"><div class="step-num">1</div><div class="step-line"></div></div>
+        <div class="step-content">
+          <h3>Prepare Cost Surface</h3>
+          <p>Generate or import a rasterized construction cost surface using <a href="https://doi.org/10.1080/13658816.2019.1675885" target="_blank" rel="noopener">CostMAP</a>. This graph encodes the relative cost of constructing pipeline between any two grid cells, accounting for terrain, land cover, population, and barriers.</p>
+        </div>
+      </div>
+      <div class="workflow-step">
+        <div class="step-indicator"><div class="step-num">2</div><div class="step-line"></div></div>
+        <div class="step-content">
+          <h3>Import Source &amp; Sink Data</h3>
+          <p>Prepare CO<sub>2</sub> source and sink data (geolocation, capture/storage capacity, unit costs) as an Excel file. Optionally include existing pipeline geolocation data from operator records or the NPMS Public Viewer.</p>
+        </div>
+      </div>
+      <div class="workflow-step">
+        <div class="step-indicator"><div class="step-num">3</div><div class="step-line"></div></div>
+        <div class="step-content">
+          <h3>Embed Existing Pipelines</h3>
+          <p>If existing pipelines are provided, their paths are encoded as zero-cost edges on the cost surface. Tie-in points and exclusion zones are configured to control where new connections can enter or exit the pipeline.</p>
+        </div>
+      </div>
+      <div class="workflow-step">
+        <div class="step-indicator"><div class="step-num">4</div><div class="step-line"></div></div>
+        <div class="step-content">
+          <h3>Generate Candidate Network</h3>
+          <p>Delaunay triangulation determines source-sink pairings. Least-cost paths are computed for each pair on the weighted graph. Redundant edges are removed and the network is refined to produce a tractable candidate network.</p>
+        </div>
+      </div>
+      <div class="workflow-step">
+        <div class="step-indicator"><div class="step-num">5</div><div class="step-line"></div></div>
+        <div class="step-content">
+          <h3>Solve MILP Optimization</h3>
+          <p>The candidate network is formulated as a Mixed-Integer Linear Program minimizing total sequestration cost. Gurobi (or CPLEX) finds optimal source-sink pairings, pipeline routes, flow volumes, and build decisions. Supports single-period or multiperiod planning.</p>
+        </div>
+      </div>
+      <div class="workflow-step">
+        <div class="step-indicator"><div class="step-num">6</div><div class="step-line"></div></div>
+        <div class="step-content">
+          <h3>View Results &amp; Compare Scenarios</h3>
+          <p>The solution is displayed on interactive Plotly/Mapbox maps with cost breakdowns, economic indicators, and time-series charts. Save runs as named scenarios and compare them side-by-side.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 5. APP PAGES ==================== -->
+<section id="pages">
+  <div class="wrap">
+    <div class="section-label">Application</div>
+    <h2 class="section-title">Streamlit App Pages</h2>
+    <p class="section-desc">
+      A step-by-step visual walkthrough with screenshots is available in the
+      <a href="https://github.com/davidpcg01/SEQUESTRIX/blob/main/SEQUESTRIX%20QUICK%20USER%20GUIDE.pdf" target="_blank" rel="noopener">Quick User Guide (PDF)</a>.
+    </p>
+    <div class="app-pages">
+      <div class="app-page">
+        <div class="app-page-num">1</div>
+        <div>
+          <h3>Input Data</h3>
+          <p>Upload your source/sink Excel file and optional pipeline file. Configure pipeline direction, tie-in points, and exclusion zones. Preview all locations on an interactive Mapbox map with pipeline polylines and tie-in markers.</p>
+        </div>
+      </div>
+      <div class="app-page">
+        <div class="app-page-num">2</div>
+        <div>
+          <h3>Solve</h3>
+          <p>Set project duration, CO<sub>2</sub> sequestration target, and capital recovery factor. Toggle multiperiod mode to enable per-period planning with configurable period count and cumulative or per-period target modes. Click solve to run the full pipeline: cost surface loading, network generation, and MILP optimization. Save the run as a named scenario.</p>
+        </div>
+      </div>
+      <div class="app-page">
+        <div class="app-page-num">3</div>
+        <div>
+          <h3>Results Dashboard</h3>
+          <p>View key metrics: sources and sinks used, total CO<sub>2</sub> sequestered, and unit costs for capture, storage, transport, and total. Tabs break down capture, storage, and transport details. Economic classification highlights profitability. When multiperiod mode is active, a Time Series tab shows per-period capture and storage line charts with cumulative storage area charts. Export results as CSV.</p>
+        </div>
+      </div>
+      <div class="app-page">
+        <div class="app-page-num">4</div>
+        <div>
+          <h3>Scenario Analysis</h3>
+          <p>Browse saved scenarios with metadata (date, duration, target, solver used). View a single scenario in detail with metrics, cost breakdown tabs, and the saved network map. Select multiple scenarios for side-by-side comparison: summary tables, unit cost bar charts, capture/storage/transport comparisons, and network maps displayed together.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 6. ARCHITECTURE ==================== -->
+<section id="architecture">
+  <div class="wrap">
+    <div class="section-label">Architecture</div>
+    <h2 class="section-title">Tech Stack &amp; Modules</h2>
+    <p class="section-desc">Python backend with Streamlit frontend. No database required; all data flows through Excel/CSV files.</p>
+    <div class="tech-grid">
+      <div class="tech-item">
+        <h4>geotransformation.py</h4>
+        <p>Loads the construction cost surface CSV and converts geographic coordinates to grid positions on the cost graph.</p>
+      </div>
+      <div class="tech-item">
+        <h4>alternateNetworkGeo.py</h4>
+        <p>Builds the candidate pipeline network using NetworkX directed graphs, shortest-path algorithms, and existing pipeline embedding.</p>
+      </div>
+      <div class="tech-item">
+        <h4>networkDelanunay.py</h4>
+        <p>Generates Delaunay triangulation pairings between source and sink nodes using SciPy spatial algorithms.</p>
+      </div>
+      <div class="tech-item">
+        <h4>input_data.py</h4>
+        <p>Reads Excel input files for sources, sinks, pipelines, and optional multiperiod time-series sheets. Returns structured data for the optimizer.</p>
+      </div>
+      <div class="tech-item">
+        <h4>math_model.py</h4>
+        <p>Single-period MILP formulation using Gurobi (gurobipy). Defines variables, constraints, objective function, and solution extraction. Falls back to CPLEX via PuLP for large models.</p>
+      </div>
+      <div class="tech-item">
+        <h4>math_model_multiperiod.py</h4>
+        <p>Multiperiod MILP extension. Time-indexes flows, capture, and injection while keeping build and activation decisions time-invariant. Supports per-period or cumulative targets.</p>
+      </div>
+      <div class="tech-item">
+        <h4>scenario_manager.py</h4>
+        <p>File-based scenario persistence: save/load/delete named runs with solution CSV, metadata JSON, and optional Plotly network map snapshots.</p>
+      </div>
+      <div class="tech-item">
+        <h4>dummyCostSurface.py</h4>
+        <p>Generates synthetic cost surfaces for testing when CostMAP data is unavailable.</p>
+      </div>
+    </div>
+    <h3 style="margin-top:32px; margin-bottom:16px;">Key Dependencies</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Package</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>gurobipy</code></td><td>Primary MILP solver (Gurobi Python API)</td></tr>
+          <tr><td><code>pulp</code></td><td>Fallback solver interface for CPLEX on large models</td></tr>
+          <tr><td><code>networkx</code></td><td>Graph construction, shortest paths, network analysis</td></tr>
+          <tr><td><code>streamlit</code></td><td>Web application framework</td></tr>
+          <tr><td><code>plotly</code></td><td>Interactive charts and Mapbox geospatial maps</td></tr>
+          <tr><td><code>pandas</code></td><td>Data manipulation and I/O</td></tr>
+          <tr><td><code>scipy</code></td><td>Delaunay triangulation and spatial algorithms</td></tr>
+          <tr><td><code>geopy</code></td><td>Geodesic distance calculations</td></tr>
+          <tr><td><code>numpy</code></td><td>Numerical computing</td></tr>
+          <tr><td><code>openpyxl</code></td><td>Excel file reading</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 7. INSTALLATION ==================== -->
+<section id="install">
+  <div class="wrap">
+    <div class="section-label">Getting Started</div>
+    <h2 class="section-title">Installation Guide</h2>
+    <p class="section-desc">Get Sequestrix running locally in a few steps. Requires Python 3.9+ and pip.</p>
+    <div class="install-steps">
+      <div class="install-step">
+        <h3>Clone the Repository</h3>
+        <pre><code>git clone https://github.com/davidpcg01/SEQUESTRIX.git
+cd SEQUESTRIX</code></pre>
+      </div>
+      <div class="install-step">
+        <h3>Download Cost Surface Data</h3>
+        <p>Download the construction cost surface subset CSV and place it in the repository root:</p>
+        <p><a href="https://www.mediafire.com/file/a4q2kzgajgui9q9/construction-costs-subset.csv/file" target="_blank" rel="noopener">Download construction-costs-subset.csv from Mediafire</a></p>
+        <p>This file is too large for GitHub and is required for generating candidate pipeline networks. If you have access to CostMAP, you can generate your own cost surface instead.</p>
+      </div>
+      <div class="install-step">
+        <h3>Install Python Dependencies</h3>
+        <pre><code>pip install -r requirements.txt</code></pre>
+        <p>If you plan to use CPLEX as a fallback solver, also install PuLP:</p>
+        <pre><code>pip install pulp</code></pre>
+      </div>
+      <div class="install-step">
+        <h3>Set Up a Solver</h3>
+        <p>Sequestrix requires either <strong>Gurobi</strong> or <strong>IBM CPLEX</strong>. See the <a href="#solvers">Solver Selection</a> section below for details.</p>
+        <p><strong>Quickest path:</strong> The Gurobi Python API (<code>gurobipy</code>) is installed with the requirements. The free license supports models with up to 2,000 variables and constraints. For academic use, apply for a <a href="https://www.gurobi.com/academia/academic-program-and-licenses/" target="_blank" rel="noopener">free academic license</a> which removes these limits.</p>
+      </div>
+      <div class="install-step">
+        <h3>Run Sequestrix</h3>
+        <pre><code>streamlit run Sequestrix/Home.py</code></pre>
+        <p>The app will open in your default browser, or you can navigate to the Local URL printed in the terminal (typically <code>http://localhost:8501</code>).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 8. INPUT DATA FORMAT ==================== -->
+<section id="input-format">
+  <div class="wrap">
+    <div class="section-label">Data</div>
+    <h2 class="section-title">Input Data Format</h2>
+    <p class="section-desc">Sequestrix reads Excel (<code>.xlsx</code>) files with specific sheet names and column structures.</p>
+
+    <div class="sheet-card">
+      <h4>sources <span class="required-tag tag-required">Required</span></h4>
+      <p>CO<sub>2</sub> emission source data. Each row is a capture facility.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Description</th><th>Units</th></tr></thead>
+          <tbody>
+            <tr><td>ID</td><td>Unique numeric identifier</td><td></td></tr>
+            <tr><td>Unique Name</td><td>Facility name</td><td></td></tr>
+            <tr><td>Capture Capacity</td><td>Annual CO<sub>2</sub> capture capacity</td><td>MTCO<sub>2</sub>/yr</td></tr>
+            <tr><td>Total Unit Cost</td><td>Unit capture cost</td><td>USD/tCO<sub>2</sub></td></tr>
+            <tr><td>Lat</td><td>Latitude</td><td>Decimal degrees</td></tr>
+            <tr><td>Long</td><td>Longitude</td><td>Decimal degrees</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sheet-card">
+      <h4>sinks <span class="required-tag tag-required">Required</span></h4>
+      <p>CO<sub>2</sub> storage site data. Each row is an injection/storage location.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Description</th><th>Units</th></tr></thead>
+          <tbody>
+            <tr><td>ID</td><td>Unique numeric identifier</td><td></td></tr>
+            <tr><td>Unique Name</td><td>Storage site name</td><td></td></tr>
+            <tr><td>Storage Capacity</td><td>Total CO<sub>2</sub> storage capacity</td><td>MTCO<sub>2</sub></td></tr>
+            <tr><td>Total Unit Cost</td><td>Unit storage cost (negative if using tax credits)</td><td>USD/tCO<sub>2</sub></td></tr>
+            <tr><td>Lat</td><td>Latitude</td><td>Decimal degrees</td></tr>
+            <tr><td>Long</td><td>Longitude</td><td>Decimal degrees</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sheet-card">
+      <h4>pipeline <span class="required-tag tag-optional">Optional</span></h4>
+      <p>Existing pipeline geolocation sequences. Lat-Long points along the pipeline path, capacity, and transport cost. Uploaded as a separate Excel file on the Input Data page.</p>
+    </div>
+
+    <h3 style="margin-top:32px; margin-bottom:16px;">Multiperiod Sheets <span class="required-tag tag-optional">Optional</span></h3>
+    <p style="color:var(--text-muted); margin-bottom:16px;">Add these sheets to the same input Excel file to enable multiperiod optimization.</p>
+
+    <div class="sheet-card">
+      <h4>source_periods</h4>
+      <p>Time-varying capture capacities. Columns: <code>ID</code>, <code>Period</code> (1-indexed integer), <code>Capture Capacity</code> (MTCO<sub>2</sub>/yr).</p>
+    </div>
+    <div class="sheet-card">
+      <h4>sink_periods</h4>
+      <p>Time-varying injectivity limits. Columns: <code>ID</code>, <code>Period</code>, <code>Injectivity</code> (MTCO<sub>2</sub>/yr).</p>
+    </div>
+    <div class="sheet-card">
+      <h4>targets</h4>
+      <p>Per-period CO<sub>2</sub> capture targets. Columns: <code>Period</code>, <code>Target</code> (MTCO<sub>2</sub>/yr). Used when per-period target mode is selected on the Solve page.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 9. SOLVER SELECTION ==================== -->
+<section id="solvers">
+  <div class="wrap">
+    <div class="section-label">Solvers</div>
+    <h2 class="section-title">Solver Selection</h2>
+    <p class="section-desc">Sequestrix supports two MILP solvers. Gurobi is the primary solver; CPLEX is the automatic fallback for larger models.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Aspect</th><th>Gurobi</th><th>IBM CPLEX</th></tr></thead>
+        <tbody>
+          <tr><td>Python API</td><td><code>gurobipy</code> (pip installable)</td><td><code>cplex</code> + <code>pulp</code></td></tr>
+          <tr><td>Free Tier</td><td>Up to 2,000 variables and constraints</td><td>Community edition with limits</td></tr>
+          <tr><td>Academic License</td><td>Free, unlimited (apply via Gurobi website)</td><td>Free via IBM Academic Initiative</td></tr>
+          <tr><td>Sequestrix Integration</td><td>Primary solver; native API</td><td>Fallback via PuLP from MPS file</td></tr>
+          <tr><td>Auto-Fallback</td><td colspan="2">If model exceeds Gurobi free limits (&gt;2,000 vars/constraints), Sequestrix automatically exports to MPS and solves with CPLEX via PuLP</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:16px; color:var(--text-muted);">
+      <strong>Recommendation:</strong> Install Gurobi (included in <code>requirements.txt</code>). For small to medium problems, the free tier is sufficient.
+      If you are in academia, apply for the free academic license for unlimited model sizes. Install CPLEX separately only if needed as a fallback.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 10. CASE STUDIES ==================== -->
+<section id="cases">
+  <div class="wrap">
+    <div class="section-label">Case Studies</div>
+    <h2 class="section-title">Demonstrated Applications</h2>
+    <p class="section-desc">From the SPE Journal publication: two real-world case studies demonstrating pipeline embedding and sequestration economics.</p>
+
+    <div class="case-study">
+      <h3>Enid-Purdy Pipeline, Central Oklahoma</h3>
+      <p>
+        The Enid-Purdy pipeline (117 miles, 8-inch diameter, operated by Anadarko) was embedded into the cost surface
+        to evaluate transport cost savings across five scenarios: a base case without the pipeline, and four configurations
+        with varying tie-in and exclusion rules.
+      </p>
+      <p>
+        Eight CO<sub>2</sub> sources (4.77 MTCO<sub>2</sub>/yr combined capture capacity) and eight sinks (15.5 MTCO<sub>2</sub> storage)
+        were evaluated with a target of 1.55 MTCO<sub>2</sub>/yr over 10 years.
+      </p>
+      <div class="stat-row">
+        <div class="stat"><div class="val">44%</div><div class="label">Max transport cost reduction</div></div>
+        <div class="stat"><div class="val">15%</div><div class="label">Total unit cost reduction</div></div>
+        <div class="stat"><div class="val">268 km</div><div class="label">Pipeline reused (best case)</div></div>
+        <div class="stat"><div class="val">5</div><div class="label">Scenarios compared</div></div>
+      </div>
+      <p style="margin-top:16px;">
+        <strong>Key finding:</strong> Unrestricted ingress/egress (Scenario a) yielded the largest savings. However, discrete
+        tie-in points (Scenario b) can produce suboptimal routes that avoid the pipeline entirely, increasing costs.
+        The result underscores the importance of configurable tie-in rules.
+      </p>
+    </div>
+
+    <div class="case-study">
+      <h3>CarbonSAFE II, Osage County, Oklahoma</h3>
+      <p>
+        As part of the DOE CarbonSAFE Phase II initiative, Sequestrix was used to evaluate storing 50 MTCO<sub>2</sub>
+        over 30 years in the Arbuckle formation in Osage County. A new pipeline parallel to the existing
+        Coffeyville-Burbank line was proposed, and Sequestrix identified the optimal additional CO<sub>2</sub> source
+        tie-in point.
+      </p>
+      <p>
+        Using the NETL CO<sub>2</sub> transport cost model (CO2_T_M) for pipeline costing and the 2022 45Q tax credits
+        ($85/tCO<sub>2</sub> for permanent storage), the project economics were evaluated.
+      </p>
+      <div class="stat-row">
+        <div class="stat"><div class="val" style="color:var(--accent);">-$28.63</div><div class="label">Unit cost (USD/tCO<sub>2</sub>)</div></div>
+        <div class="stat"><div class="val">50 MT</div><div class="label">Total CO<sub>2</sub> stored</div></div>
+        <div class="stat"><div class="val">30 yr</div><div class="label">Project duration</div></div>
+        <div class="stat"><div class="val">84 km</div><div class="label">New pipeline to tie-in</div></div>
+      </div>
+      <p style="margin-top:16px;">
+        <strong>Key finding:</strong> The negative unit cost (-$28.63/tCO<sub>2</sub>) demonstrates that the project generates
+        net revenue per ton of CO<sub>2</sub> stored, driven by the 45Q tax credits offsetting capture, transport, and injection costs.
+        Sequestrix identified the Ash-Grove cement plant in Kansas as the optimal additional source for tie-in.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 11. MATHEMATICAL FORMULATION ==================== -->
+<section id="math">
+  <div class="wrap">
+    <div class="section-label">Formulation</div>
+    <h2 class="section-title">Mathematical Model</h2>
+    <p class="section-desc">The MILP minimizes total sequestration cost subject to flow, capacity, and target constraints. Full details in the <a href="https://doi.org/10.2118/214917-PA" target="_blank" rel="noopener">SPE Journal paper</a>.</p>
+
+    <h3 style="margin-bottom:12px;">Single-Period Objective</h3>
+    <div class="math-block">
+      $$\min \left[ \underbrace{\sum_{i \in S} \left( F_i^S s_i + V_i^S a_i \right)}_{\text{capture}} + \underbrace{\sum_{j \in R} \left( F_j^R r_j + V_j^R b_j \right)}_{\text{storage}} + \underbrace{\sum_{a \in A} \sum_{c \in C} \beta_{ac} y_{ac}}_{\text{pipe build}} + \underbrace{\sum_{a \in A} \sum_{c \in C} \alpha_{ac} f_{ac}}_{\text{transport}} \right]$$
+    </div>
+
+    <h3 style="margin-top:28px; margin-bottom:12px;">Key Constraints</h3>
+    <div class="math-block">
+      <p style="margin-bottom:8px;"><strong>Arc capacity bounds:</strong></p>
+      $$Q_{ac}^{\min} \leq f_{ac} \leq Q_{ac}^{\max} \quad \forall\, a \in A,\; c \in C$$
+      <p style="margin-top:16px; margin-bottom:8px;"><strong>Single direction per arc:</strong></p>
+      $$\sum_{c \in C} y_{ac} \leq 1 \quad \forall\, a \in A$$
+      <p style="margin-top:16px; margin-bottom:8px;"><strong>Flow balance at transshipment nodes:</strong></p>
+      $$\sum_{\substack{a \in A, c \in C \\ \text{src}(a)=n}} f_{ac} - \sum_{\substack{a \in A, c \in C \\ \text{dst}(a)=n}} f_{ac} = 0 \quad \forall\, n \in N$$
+      <p style="margin-top:16px; margin-bottom:8px;"><strong>Capture target:</strong></p>
+      $$\sum_{i \in S} a_i \geq \text{CO}_2^T$$
+    </div>
+
+    <h3 style="margin-top:28px; margin-bottom:12px;">Multiperiod Extension</h3>
+    <p style="margin-bottom:12px; color:var(--text-muted);">Flows become time-indexed ($f_{ac,t}$, $a_{i,t}$, $b_{j,t}$) while build decisions ($y_{ac}$, $s_i$, $r_j$) remain time-invariant. The objective sums costs over all periods $t \in \mathcal{T}$.</p>
+    <div class="math-block">
+      <p style="margin-bottom:8px;"><strong>Cumulative target (default):</strong></p>
+      $$\sum_{t \in \mathcal{T}} \sum_{i \in S} a_{i,t} \geq \text{CO}_2^T \cdot |\mathcal{T}|$$
+      <p style="margin-top:16px; margin-bottom:8px;"><strong>Per-period target (optional):</strong></p>
+      $$\sum_{i \in S} a_{i,t} \geq \text{CO}_{2,t}^T \quad \forall\, t \in \mathcal{T}$$
+      <p style="margin-top:16px; margin-bottom:8px;"><strong>Cumulative storage bound:</strong></p>
+      $$\sum_{t \in \mathcal{T}} b_{j,t} \leq Q_j^R \cdot r_j \quad \forall\, j \in R$$
+    </div>
+
+    <h3 style="margin-top:28px; margin-bottom:12px;">Notation</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Symbol</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>$S$</td><td>Set of CO<sub>2</sub> capture source nodes</td></tr>
+          <tr><td>$R$</td><td>Set of CO<sub>2</sub> sink / storage nodes</td></tr>
+          <tr><td>$N$</td><td>Set of transshipment nodes</td></tr>
+          <tr><td>$A$</td><td>Set of all arcs (new-build and existing pipeline)</td></tr>
+          <tr><td>$C$</td><td>Set of pipeline cost trends (piecewise-linear segments)</td></tr>
+          <tr><td>$\mathcal{T}$</td><td>Set of planning periods (multiperiod only)</td></tr>
+          <tr><td>$f_{ac}$</td><td>CO<sub>2</sub> flow on arc $a$ with trend $c$ (tCO<sub>2</sub>/yr)</td></tr>
+          <tr><td>$y_{ac}$</td><td>Binary: 1 if arc $a$ with trend $c$ is built</td></tr>
+          <tr><td>$a_i$</td><td>CO<sub>2</sub> captured at source $i$ (tCO<sub>2</sub>/yr)</td></tr>
+          <tr><td>$b_j$</td><td>CO<sub>2</sub> stored at sink $j$ (tCO<sub>2</sub>/yr)</td></tr>
+          <tr><td>$s_i, r_j$</td><td>Binary activation for source $i$ / sink $j$</td></tr>
+          <tr><td>$\alpha_{ac}$</td><td>Transport cost for arc $a$, trend $c$ (USD/tCO<sub>2</sub>)</td></tr>
+          <tr><td>$\beta_{ac}$</td><td>Build cost for arc $a$, trend $c$ (USD M/yr)</td></tr>
+          <tr><td>$\text{CO}_2^T$</td><td>Target CO<sub>2</sub> sequestration (MTCO<sub>2</sub>/yr)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 12. CITATION ==================== -->
+<section id="citation">
+  <div class="wrap">
+    <div class="section-label">Publication</div>
+    <h2 class="section-title">Citation</h2>
+    <p class="section-desc">If you use Sequestrix in your research, please cite the following publication.</p>
+    <div class="citation-box">
+      <p>
+        Nnamdi, D. and Moghanloo, R. G. 2026. Embedding Existing Pipelines in Design of CO<sub>2</sub> Transportation Networks
+        for Optimal Sequestration Economics. <em>SPE Journal</em> <strong>31</strong> (01): 643-660. SPE-214917-PA.
+        <a href="https://doi.org/10.2118/214917-PA" target="_blank" rel="noopener">https://doi.org/10.2118/214917-PA</a>
+      </p>
+    </div>
+    <h3 style="margin-top:20px; margin-bottom:12px;">BibTeX</h3>
+    <pre><code>@article{nnamdi2026sequestrix,
+  title     = {Embedding Existing Pipelines in Design of {CO2}
+               Transportation Networks for Optimal Sequestration
+               Economics},
+  author    = {Nnamdi, David and Moghanloo, R. G.},
+  journal   = {SPE Journal},
+  volume    = {31},
+  number    = {01},
+  pages     = {643--660},
+  year      = {2026},
+  month     = jan,
+  note      = {SPE-214917-PA},
+  doi       = {10.2118/214917-PA},
+  publisher = {Society of Petroleum Engineers}
+}</code></pre>
+  </div>
+</section>
+
+</main>
+
+<!-- ==================== 13. FOOTER ==================== -->
+<footer>
+  <div class="wrap">
+    <div class="footer-links">
+      <a href="https://github.com/davidpcg01/SEQUESTRIX" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://doi.org/10.2118/214917-PA" target="_blank" rel="noopener">SPE Journal Paper</a>
+      <a href="https://github.com/davidpcg01/SEQUESTRIX/blob/main/SEQUESTRIX%20QUICK%20USER%20GUIDE.pdf" target="_blank" rel="noopener">User Guide</a>
+      <a href="mailto:nnamdidavid.n@gmail.com">Contact</a>
+    </div>
+    <p>
+      Developed by <strong>David Nnamdi</strong>, University of Oklahoma.
+      <br>Released under the <a href="https://github.com/davidpcg01/SEQUESTRIX/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>.
+    </p>
+  </div>
+</footer>
+
+<script>
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.querySelector('.sidebar-overlay').classList.toggle('open');
+}
+
+(function() {
+  var sidebar = document.querySelector('.sidebar');
+  var links = sidebar.querySelectorAll('a[href^="#"]');
+  var sections = [];
+
+  links.forEach(function(link) {
+    var id = link.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ id: id, el: el, link: link });
+
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 1024) {
+        sidebar.classList.remove('open');
+        document.querySelector('.sidebar-overlay').classList.remove('open');
+      }
+    });
+  });
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        links.forEach(function(l) { l.classList.remove('active'); });
+        var match = sections.find(function(s) { return s.id === entry.target.id; });
+        if (match) match.link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+
+  sections.forEach(function(s) { observer.observe(s.el); });
+})();
+</script>
+</body>
+</html>
